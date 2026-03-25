@@ -1,0 +1,11 @@
+{
+  "name": "gemini-imagegen",
+  "version": "1.0.0",
+  "description": "Image generation and editing using Google Gemini API — text-to-image, SVG, multi-turn refinement, transparency, and prompt sidecar files",
+  "author": {
+    "name": "Hannes Ebner"
+  },
+  "repository": "https://github.com/ebner/agentics",
+  "license": "MIT",
+  "keywords": ["image-generation", "gemini", "svg", "illustration", "ai-art"]
+}
