@@ -37,7 +37,7 @@ class ImageChat:
     
     def __init__(
         self,
-        model: str = "gemini-2.5-flash-image",
+        model: str = "gemini-3.1-flash-image-preview",
         output_dir: str = ".",
     ):
         api_key = os.environ.get("GEMINI_API_KEY")
@@ -120,7 +120,7 @@ def main():
     )
     parser.add_argument(
         "--model", "-m",
-        default="gemini-2.5-flash-image",
+        default="gemini-3.1-flash-image-preview",
         choices=["gemini-2.5-flash-image", "gemini-3.1-flash-image-preview"],
         help="Model to use"
     )

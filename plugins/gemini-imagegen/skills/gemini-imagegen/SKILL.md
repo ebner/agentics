@@ -1,7 +1,7 @@
 ---
 name: gemini-imagegen
 description: This skill should be used when generating and editing images using the Gemini API (Nano Banana 2). It applies when creating images from text prompts, editing existing images, applying style transfers, generating logos with text, creating stickers, product mockups, or any image generation/manipulation task. Supports text-to-image, image editing, multi-turn refinement, and composition from multiple reference images.
-allowed-tools: Read, Write, Glob, Grep, Task, Bash(cat:*), Bash(ls:*), Bash(tree:*), Bash(python3:*)
+allowed-tools: Read, Write, Glob, Grep, Task, Bash(find:*gemini-imagegen*), Bash(bash:*gemini-imagegen/scripts/run.sh*)
 ---
 
 # Gemini Image Generation (Nano Banana 2)
@@ -46,7 +46,7 @@ script command, discover the path once and reuse it for the entire session:
 RUN_SH="$(find ~/.claude -path '*/gemini-imagegen/scripts/run.sh' -print -quit 2>/dev/null)"
 ```
 
-Then use `"$RUN_SH"` in place of the full path in all subsequent commands.
+Then use `bash "$RUN_SH"` in place of the full path in all subsequent commands.
 If `$RUN_SH` is empty, the skill is not installed — inform the user.
 
 ## CLI Scripts (Recommended)
@@ -57,25 +57,25 @@ Use the provided scripts for hands-free image generation. The `run.sh` wrapper a
 
 ```bash
 # Generate an image (venv setup is automatic)
-"$RUN_SH" generate_image.py "A teal lock icon" output.jpg
+bash "$RUN_SH" generate_image.py "A teal lock icon" output.jpg
 
 # With aspect ratio and resolution
-"$RUN_SH" generate_image.py "A wide landscape" wide.jpg --aspect 16:9 --size 2K
+bash "$RUN_SH" generate_image.py "A wide landscape" wide.jpg --aspect 16:9 --size 2K
 
 # Use model explicitly
-"$RUN_SH" generate_image.py "A detailed logo" logo.jpg --model gemini-3.1-flash-image-preview
+bash "$RUN_SH" generate_image.py "A detailed logo" logo.jpg --model gemini-3.1-flash-image-preview
 ```
 
 ### PNG with Transparency
 
 ```bash
 # Generate with transparent background (converts white to transparent)
-"$RUN_SH" generate_image.py \
+bash "$RUN_SH" generate_image.py \
     "An illustration with white background" output.png \
     --format png --transparent
 
 # With edge tolerance for anti-aliasing (recommended for illustrations)
-"$RUN_SH" generate_image.py \
+bash "$RUN_SH" generate_image.py \
     "An illustration with white background" output.png \
     --format png --transparent --edge-tolerance 10
 ```
@@ -83,62 +83,62 @@ Use the provided scripts for hands-free image generation. The `run.sh` wrapper a
 ### Edit Existing Images
 
 ```bash
-"$RUN_SH" edit_image.py input.jpg "Add a sunset" output.jpg
+bash "$RUN_SH" edit_image.py input.jpg "Add a sunset" output.jpg
 
 # Edit and convert to transparent PNG
-"$RUN_SH" edit_image.py input.jpg "Add a sunset" output.png \
+bash "$RUN_SH" edit_image.py input.jpg "Add a sunset" output.png \
     --format png --transparent
 ```
 
 ### Multi-Image Composition
 
 ```bash
-"$RUN_SH" compose_images.py "Combine into a collage" output.jpg image1.jpg image2.jpg
+bash "$RUN_SH" compose_images.py "Combine into a collage" output.jpg image1.jpg image2.jpg
 ```
 
 ### Multi-Turn Refinement
 
 ```bash
 # Start interactive chat session
-"$RUN_SH" multi_turn_chat.py session_name
+bash "$RUN_SH" multi_turn_chat.py session_name
 ```
 
 ### Convert Existing Images to Transparent PNGs
 
 ```bash
 # Dry run (shows what would be converted)
-"$RUN_SH" convert_to_transparent.py ./images --recursive
+bash "$RUN_SH" convert_to_transparent.py ./images --recursive
 
 # Execute conversion
-"$RUN_SH" convert_to_transparent.py ./images --recursive --execute
+bash "$RUN_SH" convert_to_transparent.py ./images --recursive --execute
 
 # With edge tolerance for anti-aliased edges
-"$RUN_SH" convert_to_transparent.py ./images --recursive --execute --edge-tolerance 10
+bash "$RUN_SH" convert_to_transparent.py ./images --recursive --execute --edge-tolerance 10
 ```
 
 ### Regenerate from Sidecar Files
 
 ```bash
 # Dry run - preview what would be regenerated
-"$RUN_SH" regenerate.py ./frontend/public/images/illustrations/ -r
+bash "$RUN_SH" regenerate.py ./frontend/public/images/illustrations/ -r
 
 # Regenerate all images (reads .prompt sidecars, dispatches to correct script)
-"$RUN_SH" regenerate.py ./frontend/public/images/illustrations/ -r --execute
+bash "$RUN_SH" regenerate.py ./frontend/public/images/illustrations/ -r --execute
 
 # Regenerate with a new raster model (model upgrade scenario)
-"$RUN_SH" regenerate.py ./frontend/public/images/illustrations/ -r --execute \
+bash "$RUN_SH" regenerate.py ./frontend/public/images/illustrations/ -r --execute \
     --raster-model gemini-3.1-flash-image-preview
 
 # Override SVG model
-"$RUN_SH" regenerate.py ./assets/ -r --execute \
+bash "$RUN_SH" regenerate.py ./assets/ -r --execute \
     --svg-model gemini-3.1-pro-preview
 
 # Only regenerate SVGs or raster images
-"$RUN_SH" regenerate.py ./assets/ -r --execute --filter svg
-"$RUN_SH" regenerate.py ./assets/ -r --execute --filter raster
+bash "$RUN_SH" regenerate.py ./assets/ -r --execute --filter svg
+bash "$RUN_SH" regenerate.py ./assets/ -r --execute --filter raster
 
 # Regenerate a single image
-"$RUN_SH" regenerate.py ./hero-main.prompt --execute
+bash "$RUN_SH" regenerate.py ./hero-main.prompt --execute
 ```
 
 The script reads each `.prompt` sidecar, detects `format: svg` vs raster from the metadata, and dispatches to `generate_svg` or `generate_image` with the original parameters. **Always dry-run first** (default) to review the plan before using `--execute`.
@@ -174,7 +174,7 @@ This converts pure white backgrounds while cleaning up anti-aliased edges, witho
 ### Example: Generate Transparent Illustration
 
 ```bash
-"$RUN_SH" generate_image.py \
+bash "$RUN_SH" generate_image.py \
     "Create an empty state illustration in soft minimalism style. Background: pure white (#FFFFFF)." \
     empty-state.png \
     --format png --transparent --edge-tolerance 10 --aspect 1:1
@@ -183,7 +183,7 @@ This converts pure white backgrounds while cleaning up anti-aliased edges, witho
 ### Example: Convert Existing JPG to Transparent PNG
 
 ```bash
-"$RUN_SH" convert_to_transparent.py \
+bash "$RUN_SH" convert_to_transparent.py \
     ~/images/illustrations --recursive --execute --edge-tolerance 10
 ```
 
@@ -238,7 +238,7 @@ edit_history: []
 ### Using Templates with CLI
 
 ```bash
-"$RUN_SH" generate_image.py \
+bash "$RUN_SH" generate_image.py \
     "Full prompt here..." output.png \
     --format png --transparent \
     --content "Brief description of unique content" \
@@ -270,16 +270,16 @@ edit_history: []
 
 ```bash
 # JPG (default)
-"$RUN_SH" generate_image.py "prompt" output.jpg
+bash "$RUN_SH" generate_image.py "prompt" output.jpg
 
 # PNG (required for transparency)
-"$RUN_SH" generate_image.py "prompt" output.png --format png
+bash "$RUN_SH" generate_image.py "prompt" output.png --format png
 
 # PNG with transparency
-"$RUN_SH" generate_image.py "prompt" output.png --format png --transparent
+bash "$RUN_SH" generate_image.py "prompt" output.png --format png --transparent
 
 # WebP
-"$RUN_SH" generate_image.py "prompt" output.webp --format webp
+bash "$RUN_SH" generate_image.py "prompt" output.webp --format webp
 ```
 
 ## Core API Pattern
@@ -416,15 +416,15 @@ Gemini 3.1 Pro can generate SVG markup directly as code output. This uses the **
 
 ```bash
 # Basic SVG generation
-"$RUN_SH" generate_svg.py "A minimalist lock icon" output.svg
+bash "$RUN_SH" generate_svg.py "A minimalist lock icon" output.svg
 
 # With specific viewBox and style constraints
-"$RUN_SH" generate_svg.py \
+bash "$RUN_SH" generate_svg.py \
     "A vault door icon with light rays" output.svg \
     --viewbox "0 0 200 200" --style minimal
 
 # Animated SVG
-"$RUN_SH" generate_svg.py \
+bash "$RUN_SH" generate_svg.py \
     "A three-dot loading animation with staggered bounce" loader.svg \
     --animated
 ```

@@ -37,10 +37,10 @@ OutputFormat = Literal["png", "jpg", "webp"]
 class GeminiImageGenerator:
     """High-level interface for Gemini image generation."""
 
+    NANO_BANANA = "gemini-3.1-flash-image-preview"
     FLASH = "gemini-2.5-flash-image"
-    PRO = "gemini-3.1-flash-image-preview"
 
-    def __init__(self, api_key: str | None = None, model: Model = FLASH):
+    def __init__(self, api_key: str | None = None, model: Model = NANO_BANANA):
         """Initialize the generator.
 
         Args:
@@ -335,7 +335,7 @@ class GeminiImageGenerator:
             )
 
         output = Path(output)
-        used_model = model or self.PRO  # Pro recommended for composition
+        used_model = model or self.NANO_BANANA  # Nano Banana 2 recommended for composition
 
         # Load images and track paths
         loaded = []
