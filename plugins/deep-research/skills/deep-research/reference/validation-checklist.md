@@ -4,6 +4,7 @@ Before delivering, verify all applicable checks pass.
 
 ## Universal checks
 
+- [ ] Every factual claim is backed by a web source fetched during this session — no training-knowledge-only claims
 - [ ] Executive summary is ≤ 250 words
 - [ ] Every major claim has at least one citation
 - [ ] At least 70% of citations are HIGH or MEDIUM credibility

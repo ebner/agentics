@@ -29,6 +29,14 @@ research by spawning **domain-specialized parallel sub-agents** that make extens
 use of WebSearch and WebFetch. Quality comes from breadth, depth, and domain-appropriate
 source selection.
 
+**CRITICAL: Web-first research only.** Every factual claim, data point, and
+recommendation in the final report MUST be backed by sources retrieved via WebSearch
+and WebFetch during this session. Training knowledge may be used to plan queries,
+interpret results, and structure the report — but NEVER as a source of factual claims.
+If a claim cannot be verified through recent web sources, it must be either omitted or
+explicitly flagged as unverified. Assume training knowledge is outdated and potentially
+wrong — the web is the only source of truth.
+
 **This skill requires autonomous WebSearch and WebFetch permissions.** If the user is
 prompted for every web request, research cannot proceed efficiently. Ensure WebSearch
 and WebFetch are in the user's allowed permissions before starting.
@@ -442,6 +450,8 @@ prevent context exhaustion:
 - **Show disagreement** — contradictory sources are a feature, not a bug.
 - **Honest limitations** — clearly state what you couldn't find or verify.
 - **No hallucination** — every claim must trace to a fetched source. If unsure, say so.
+  Never use training knowledge as a substitute for web research. If a topic has no
+  recent web sources, report that as a finding rather than filling the gap from memory.
 - **Multilingual reach** — don't limit to English when local-language sources are more authoritative.
 - **Anti-misinformation** — actively identify and flag misinformation; never cite REJECT-tier sources.
 - **Fake review awareness** — detect and flag suspicious review patterns across all relevant domains.

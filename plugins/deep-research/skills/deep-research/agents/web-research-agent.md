@@ -44,6 +44,9 @@ RELEVANCE: [high/medium/low to the cluster topic]
 
 ## Rules
 
+- **Web sources only** — every finding you report MUST come from a page you actually
+  fetched via WebFetch. Never fill gaps with training knowledge or background assumptions.
+  If you cannot find a source for a claim, report it as a gap, not a finding.
 - **Fetch aggressively** — when in doubt, fetch the page. More data is always better.
 - **Ask specific questions** in WebFetch prompts. Bad: "What does this page say?"
   Good: "What performance benchmarks does this page report for X vs Y?"
