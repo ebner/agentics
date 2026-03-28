@@ -2,6 +2,8 @@
 
 This repository is a Claude Code plugin marketplace containing multiple plugins.
 
+> **Note:** `CLAUDE.md` is a symlink to `AGENTS.md`. Edit `AGENTS.md` directly — it is the single source of truth.
+
 ## Repository Structure
 
 ```
@@ -175,6 +177,23 @@ Instructions for Claude. Use `$ARGUMENTS` for user-provided arguments.
 - Never create tautological tests that pass by definition
 - Every test must be capable of failing if the code under test is broken
 - Every test must include at least one positive assertion
+- A tautological test is one that asserts something that is always true regardless of the code's behavior (e.g., asserting a mock returns what you told it to return, or asserting `True == True`)
+
+### Running Tests
+
+Each plugin with tests has its own venv. Run tests from the plugin's skill directory:
+
+```bash
+cd plugins/gemini-imagegen/skills/gemini-imagegen
+.venv/bin/python -m pytest tests/ -v
+```
+
+If the venv doesn't exist yet, run any script via `run.sh` first to create it, or set it up manually:
+
+```bash
+python3 -m venv .venv
+.venv/bin/pip install -r requirements.txt
+```
 
 ## Installation
 

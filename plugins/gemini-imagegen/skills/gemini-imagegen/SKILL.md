@@ -133,15 +133,23 @@ bash "$RUN_SH" regenerate.py ./frontend/public/images/illustrations/ -r --execut
 bash "$RUN_SH" regenerate.py ./assets/ -r --execute \
     --svg-model gemini-3.1-pro-preview
 
-# Only regenerate SVGs or raster images
+# Filter by type: svg, raster, edit, or composition
 bash "$RUN_SH" regenerate.py ./assets/ -r --execute --filter svg
 bash "$RUN_SH" regenerate.py ./assets/ -r --execute --filter raster
+bash "$RUN_SH" regenerate.py ./assets/ -r --execute --filter edit
+bash "$RUN_SH" regenerate.py ./assets/ -r --execute --filter composition
+
+# Regenerate with a reference image (overrides sidecar source)
+bash "$RUN_SH" regenerate.py ./hero.prompt --execute --reference ./source.png
+
+# Regenerate with multiple reference images (composition mode)
+bash "$RUN_SH" regenerate.py ./collage.prompt --execute --reference img1.png img2.png
 
 # Regenerate a single image
 bash "$RUN_SH" regenerate.py ./hero-main.prompt --execute
 ```
 
-The script reads each `.prompt` sidecar, detects `format: svg` vs raster from the metadata, and dispatches to `generate_svg` or `generate_image` with the original parameters. **Always dry-run first** (default) to review the plan before using `--execute`.
+The script reads each `.prompt` sidecar and auto-detects the dispatch type: edits (has `source_image`), compositions (has `source_images`), SVGs (`format: svg`), or plain text-to-image generation. Each type dispatches to its original script (`edit_image`, `compose_images`, `generate_svg`, or `generate_image`) with the original parameters. Use `--reference` to override or inject reference images. **Always dry-run first** (default) to review the plan before using `--execute`.
 
 **Important:** Always prefer using these CLI scripts over inline Python code. They handle virtual environment setup automatically.
 

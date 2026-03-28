@@ -2,9 +2,13 @@
 """
 Regenerate images from .prompt sidecar files.
 
-Reads existing .prompt metadata and dispatches to the correct generation
-script (raster via generate_image or vector via generate_svg) with the
-original parameters. Useful for bulk regeneration after model upgrades.
+Reads existing .prompt metadata and dispatches to the correct script:
+  - edit sidecars (source_image) -> edit_image
+  - composition sidecars (source_images) -> compose_images
+  - SVG sidecars (format: svg) -> generate_svg
+  - text-only sidecars -> generate_image
+
+Useful for bulk regeneration after model upgrades or with new reference images.
 
 Usage:
     python regenerate.py path/to/image.prompt                    # Dry run (single file)
@@ -20,8 +24,12 @@ Examples:
     python regenerate.py ./frontend/public/images/illustrations/ -r --execute \
         --raster-model gemini-3.1-flash-image-preview
 
-    # Regenerate only SVGs
+    # Filter by type: svg, raster, edit, or composition
     python regenerate.py ./assets/ -r --execute --filter svg
+    python regenerate.py ./assets/ -r --execute --filter edit
+
+    # Regenerate with a reference image
+    python regenerate.py ./hero.prompt --execute --reference ./source.png
 
     # Regenerate a single image
     python regenerate.py ./hero-main.prompt --execute
@@ -39,6 +47,10 @@ import yaml
 
 from generate_image import generate_image
 from generate_svg import generate_svg
+from edit_image import edit_image
+from compose_images import compose_images
+
+DISPATCH_LABELS = {"generate": "GEN", "edit": "EDIT", "compose": "COMP"}
 
 
 def parse_sidecar(prompt_path: Path) -> dict | None:
@@ -109,6 +121,7 @@ def plan_regeneration(
     prompt_path: Path,
     raster_model: str | None,
     svg_model: str | None,
+    reference_images: list[str] | None = None,
 ) -> dict:
     """Build a regeneration plan from sidecar metadata.
 
@@ -117,23 +130,71 @@ def plan_regeneration(
         prompt_path: Path to the .prompt file
         raster_model: Override model for raster images, or None
         svg_model: Override model for SVG images, or None
+        reference_images: Optional list of reference image paths for edit/compose
 
     Returns:
-        Dict with keys: format, output_path, model, kwargs, prompt
+        Dict with keys: format, output_path, model, kwargs, prompt,
+        dispatch, source_image, source_images
     """
     fmt = metadata.get("format", "png")
     is_svg = fmt == "svg"
     output_path = resolve_output_path(prompt_path, fmt)
 
-    # Extract the prompt text
-    final_prompt = metadata.get("final_prompt", "")
-    if isinstance(final_prompt, str):
-        final_prompt = final_prompt.strip()
+    source_image: str | None = None
+    source_images: list[str] | None = None
 
-    if not final_prompt:
-        raise ValueError("No final_prompt found in sidecar")
+    if metadata.get("source_image"):
+        dispatch = "edit"
+        source_image = metadata["source_image"]
+        prompt = metadata.get("edit_instruction", "")
+    elif metadata.get("source_images") or metadata.get("type") == "composition":
+        dispatch = "compose"
+        source_images = metadata.get("source_images")
+        prompt = metadata.get("final_prompt", "")
+    else:
+        dispatch = "generate"
+        prompt = metadata.get("final_prompt", "")
 
-    # Determine model
+    if isinstance(prompt, str):
+        prompt = prompt.strip()
+
+    if reference_images and not is_svg:
+        if len(reference_images) == 1:
+            dispatch = "edit"
+            source_image = reference_images[0]
+            source_images = None
+        else:
+            dispatch = "compose"
+            source_image = None
+            source_images = reference_images
+    elif reference_images and is_svg:
+        print(
+            f"Warning: --reference ignored for SVG sidecar {prompt_path}",
+            file=sys.stderr,
+        )
+
+    if dispatch == "edit" and source_image:
+        src = Path(source_image)
+        if not src.is_absolute():
+            src = prompt_path.parent / src
+        if not src.exists():
+            raise ValueError(f"Source image not found: {src}")
+        source_image = str(src)
+
+    if dispatch == "compose" and source_images:
+        resolved: list[str] = []
+        for img in source_images:
+            p = Path(img)
+            if not p.is_absolute():
+                p = prompt_path.parent / p
+            if not p.exists():
+                raise ValueError(f"Source image not found: {p}")
+            resolved.append(str(p))
+        source_images = resolved
+
+    if not prompt:
+        raise ValueError("No prompt found in sidecar (checked final_prompt and edit_instruction)")
+
     original_model = metadata.get("model", "")
     if is_svg:
         model = svg_model or original_model or "gemini-3.1-pro-preview"
@@ -156,9 +217,10 @@ def plan_regeneration(
             "transparent": metadata.get("transparent", False),
             "tolerance": metadata.get("tolerance", 0),
             "edge_tolerance": metadata.get("edge_tolerance", 0),
-            "content": metadata.get("content"),
-            "template": metadata.get("template"),
         }
+        if dispatch == "generate":
+            kwargs["content"] = metadata.get("content")
+            kwargs["template"] = metadata.get("template")
 
     return {
         "format": fmt,
@@ -168,15 +230,22 @@ def plan_regeneration(
         "original_model": original_model,
         "model_changed": model_changed,
         "kwargs": kwargs,
-        "prompt": final_prompt,
+        "prompt": prompt,
+        "dispatch": dispatch,
+        "source_image": source_image,
+        "source_images": source_images,
     }
 
 
 def print_plan(plans: list[dict], total_skipped: int) -> None:
     """Print a summary of planned regenerations."""
     svg_count = sum(1 for p in plans if p["is_svg"])
-    raster_count = len(plans) - svg_count
+    edit_count = sum(1 for p in plans if p["dispatch"] == "edit")
+    compose_count = sum(1 for p in plans if p["dispatch"] == "compose")
+    generate_count = len(plans) - svg_count - edit_count - compose_count
     model_changes = sum(1 for p in plans if p["model_changed"])
+
+    dispatch_labels = DISPATCH_LABELS
 
     print(f"\n{'=' * 60}")
     print(f"Regeneration Plan")
@@ -185,8 +254,14 @@ def print_plan(plans: list[dict], total_skipped: int) -> None:
     print(f"  To regenerate:         {len(plans)}")
     if total_skipped:
         print(f"  Skipped (filtered):    {total_skipped}")
-    print(f"  Raster (png/jpg/webp): {raster_count}")
-    print(f"  Vector (svg):          {svg_count}")
+    if generate_count:
+        print(f"  Generate (text-only):  {generate_count}")
+    if edit_count:
+        print(f"  Edit (with ref image): {edit_count}")
+    if compose_count:
+        print(f"  Compose (multi-ref):   {compose_count}")
+    if svg_count:
+        print(f"  Vector (svg):          {svg_count}")
     if model_changes:
         print(f"  Model upgrades:        {model_changes}")
     print()
@@ -197,9 +272,17 @@ def print_plan(plans: list[dict], total_skipped: int) -> None:
         if plan["model_changed"]:
             model_info = f"{plan['original_model']} -> {plan['model']}"
         fmt_label = "SVG" if plan["is_svg"] else plan["format"].upper()
-        print(f"  [{i:3d}] {fmt_label:4s}  {path}")
+        dispatch_label = dispatch_labels.get(plan["dispatch"], "GEN")
+        print(f"  [{i:3d}] {fmt_label:4s}  {dispatch_label:4s}  {path}")
         if plan["model_changed"]:
-            print(f"         model: {model_info}")
+            print(f"               model: {model_info}")
+        if plan["dispatch"] == "edit" and plan.get("source_image"):
+            print(f"               ref: {plan['source_image']}")
+        if plan["dispatch"] == "compose" and plan.get("source_images"):
+            count = len(plan["source_images"])
+            refs = ", ".join(plan["source_images"][:3])
+            suffix = f" (+{count - 3} more)" if count > 3 else ""
+            print(f"               refs: {refs}{suffix}")
 
     print(f"\n{'=' * 60}")
     print("Dry run - no files changed. Use --execute to regenerate.")
@@ -215,6 +298,7 @@ def execute_regeneration(plans: list[dict]) -> tuple[int, int]:
     successes = 0
     failures = 0
     total = len(plans)
+    dispatch_labels = DISPATCH_LABELS
 
     for i, plan in enumerate(plans, 1):
         output_path = plan["output_path"]
@@ -223,10 +307,29 @@ def execute_regeneration(plans: list[dict]) -> tuple[int, int]:
         if plan["model_changed"]:
             model_note = f" (model: {plan['original_model']} -> {plan['model']})"
 
-        print(f"[{i}/{total}] {fmt_label} {output_path}{model_note}")
+        dispatch = plan["dispatch"]
+        dispatch_label = dispatch_labels.get(dispatch, "GEN")
+
+        print(f"[{i}/{total}] {fmt_label} {dispatch_label} {output_path}{model_note}")
 
         try:
-            if plan["is_svg"]:
+            if dispatch == "edit":
+                edit_image(
+                    input_path=plan["source_image"],
+                    instruction=plan["prompt"],
+                    output_path=output_path,
+                    model=plan["model"],
+                    **plan["kwargs"],
+                )
+            elif dispatch == "compose":
+                compose_images(
+                    instruction=plan["prompt"],
+                    output_path=output_path,
+                    image_paths=plan["source_images"],
+                    model=plan["model"],
+                    **plan["kwargs"],
+                )
+            elif plan["is_svg"]:
                 generate_svg(
                     prompt=plan["prompt"],
                     output_path=output_path,
@@ -285,8 +388,14 @@ def main():
     )
     parser.add_argument(
         "--filter",
-        choices=["svg", "raster"],
-        help="Only regenerate SVG or raster images",
+        choices=["svg", "raster", "edit", "composition"],
+        help="Only regenerate a specific type: svg, raster, edit, or composition",
+    )
+    parser.add_argument(
+        "--reference",
+        nargs="+",
+        metavar="IMAGE",
+        help="Reference image(s) to pass alongside the prompt",
     )
 
     args = parser.parse_args()
@@ -296,12 +405,21 @@ def main():
         print(f"Error: {target} does not exist", file=sys.stderr)
         sys.exit(1)
 
+    if args.reference:
+        resolved_refs = []
+        for ref_path in args.reference:
+            p = Path(ref_path)
+            if not p.exists():
+                print(f"Error: reference image not found: {ref_path}", file=sys.stderr)
+                sys.exit(1)
+            resolved_refs.append(str(p.resolve()))
+        args.reference = resolved_refs
+
     sidecars = collect_sidecars(target, args.recursive)
     if not sidecars:
         print(f"No .prompt sidecar files found in {target}")
         sys.exit(0)
 
-    # Parse and plan
     plans = []
     skipped = 0
     parse_errors = 0
@@ -316,17 +434,27 @@ def main():
         fmt = metadata.get("format", "png")
         is_svg = fmt == "svg"
 
+        has_source_image = "source_image" in metadata
+        has_source_images = "source_images" in metadata or metadata.get("type") == "composition"
+
         # Apply filter
         if args.filter == "svg" and not is_svg:
             skipped += 1
             continue
-        if args.filter == "raster" and is_svg:
+        if args.filter == "raster" and (is_svg or has_source_image or has_source_images):
+            skipped += 1
+            continue
+        if args.filter == "edit" and not has_source_image:
+            skipped += 1
+            continue
+        if args.filter == "composition" and not has_source_images:
             skipped += 1
             continue
 
         try:
             plan = plan_regeneration(
-                metadata, sidecar, args.raster_model, args.svg_model
+                metadata, sidecar, args.raster_model, args.svg_model,
+                reference_images=args.reference,
             )
             plans.append(plan)
         except ValueError as e:
