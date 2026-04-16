@@ -1,6 +1,6 @@
 {
   "name": "gemini-imagegen",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "description": "Image generation and editing using Google Gemini API — text-to-image, SVG, multi-turn refinement, transparency, and prompt sidecar files",
   "author": {
     "name": "Hannes Ebner"

@@ -19,7 +19,7 @@ for confirmation via AskUserQuestion:
 I detected [N] topics for batch research:
 1. [topic 1]
 2. [topic 2]
-...
+[repeat one numbered line per detected topic]
 
 Mode for each: [auto-detect or user-specified]
 Proceed? (Confirm, modify topics, or suggest changes)
@@ -51,7 +51,7 @@ After all individual topics are complete:
 ## Topics Researched
 1. [topic 1] — [report path]
 2. [topic 2] — [report path]
-...
+[repeat one numbered line per researched topic]
 
 ## Cross-cutting Themes
 [Themes that appear across multiple topics, with references to specific reports]

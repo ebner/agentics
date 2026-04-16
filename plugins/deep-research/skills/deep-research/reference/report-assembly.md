@@ -22,12 +22,14 @@ single most important number or data point from the research.]
 ## 1. [First major theme/finding]
 **Key takeaway: [1-2 sentence bold summary of this section's main finding.]**
 
-[Detailed analysis with inline citations as [1], [2], etc.]
+[Detailed analysis with inline citations numbered [1], [2], [3], ... [N] matching the References list order]
 [Include specific data points, numbers, comparisons]
 [Write in prose (≥80%), not bullet lists]
 
 ## 2. [Second major theme/finding]
-...
+[repeat one `## N. [theme/finding]` section per major theme, using the same
+sub-structure as section 1: bold key takeaway, prose analysis with inline
+citations, specific data points]
 
 ## N. Synthesis & Cross-cutting Insights
 [What emerges from looking across all findings together?]
@@ -62,7 +64,8 @@ encountered and rejected.]
 
 ## References
 [1] Title — URL (credibility: high/medium/low, access: full/partial)
-[2] ...
+[2] Title — URL (credibility: high/medium/low, access: full/partial)
+[repeat one `[N] Title — URL (...)` line per cited source]
 ```
 
 ## Sources JSON structure
@@ -172,7 +175,7 @@ Example format:
 | Criterion | Option A | Option B | Option C |
 |---|---|---|---|
 | [Feature 1] | ✅ Strong [1][3] | ⚠️ Partial [5] | ❌ Missing |
-| [Feature 2] | ... | ... | ... |
+| [repeat one row per evaluated feature, with a status + citation per option] | | | |
 | **Limitations** | [key limitation] | [key limitation] | [key limitation] |
 | **Overall score** | 8.5/10 | 7.2/10 | 6.1/10 |
 ```
@@ -395,7 +398,7 @@ During multi-wave research, interim files are created:
 ```
 [output-dir]/.interim-[topic-slug]-wave-1.md
 [output-dir]/.interim-[topic-slug]-wave-2.md
-...
+[one `.interim-[topic-slug]-wave-N.md` file per completed wave]
 ```
 
 After the final report is written:

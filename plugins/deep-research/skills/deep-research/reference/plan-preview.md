@@ -29,7 +29,7 @@ Domain: [detected domain] | Mode: standard | Languages: [search languages]
 Sub-questions to investigate:
 1. [sub-question 1] (domain: [tag])
 2. [sub-question 2] (domain: [tag])
-...
+[repeat one numbered line per sub-question]
 
 Planned: [N] sub-agents, ~20-30 searches, up to 3 waves
 
@@ -47,7 +47,7 @@ Domain: [detected domain] | Mode: deep | Languages: [search languages]
 Sub-questions to investigate:
 1. [sub-question 1] (domain: [tag]) — [N] planned queries
 2. [sub-question 2] (domain: [tag]) — [N] planned queries
-...
+[repeat one numbered line per sub-question]
 
 Planned: [N] sub-agents, ~40-60 searches, up to 5 waves
 Estimated duration: 15-30 minutes

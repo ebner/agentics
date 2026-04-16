@@ -224,11 +224,16 @@ Return your full evidence log AND synthesis as structured text.
 
 ### Spawn all sub-agents simultaneously
 
+Use **one Task call per sub-question**. Place ALL Task calls in a **single
+assistant message** so they execute in parallel. Do NOT collapse multiple
+sub-questions into one Task call, and do NOT serialize them across separate
+messages — both defeat parallelism.
+
 ```
+# One Task call per sub-question from STEP 1, all in the same assistant message:
 Task("Research: [sub-question 1]", merged_instructions_1)
 Task("Research: [sub-question 2]", merged_instructions_2)
-Task("Research: [sub-question 3]", merged_instructions_3)
-...
+[repeat one Task call per remaining sub-question, up to 12]
 ```
 
 Wait for all to complete, then collect results.
@@ -246,8 +251,9 @@ Wait for all to complete, then collect results.
 As the URL registry grows across waves, keep sub-agent instructions lean:
 - **Wave 1**: No skip list (empty)
 - **Wave 2+**: Pass only URLs from domains overlapping with the sub-agent's queries
-- **If skip list exceeds 100 URLs**: summarize as domain-level blocks ("Skip all
-  results from medium.com, reddit.com, ...") rather than listing individual URLs
+- **If skip list exceeds 100 URLs**: summarize as domain-level blocks
+  ("Skip all results from [list every blocked top-level domain here]") rather
+  than listing individual URLs
 
 ### Temporal sensitivity
 

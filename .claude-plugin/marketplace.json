@@ -8,13 +8,13 @@
       "name": "deep-research",
       "source": "./plugins/deep-research",
       "description": "Multi-phase web research with 15 domain-specific agent profiles, iterative deepening, anti-misinformation framework, and citation-backed reports",
-      "version": "1.2.0"
+      "version": "1.3.0"
     },
     {
       "name": "gemini-imagegen",
       "source": "./plugins/gemini-imagegen",
       "description": "Image generation and editing using Google Gemini API — text-to-image, SVG, multi-turn refinement, transparency, and prompt sidecar files",
-      "version": "1.2.0"
+      "version": "1.3.0"
     }
   ]
 }

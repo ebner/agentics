@@ -287,7 +287,7 @@ Structure your findings for the orchestrator's report assembly:
 |---|---|---|---|
 | [Criterion 1] (30%) | 8/10 | 6/10 | 9/10 |
 | [Criterion 2] (25%) | 7/10 | 9/10 | 5/10 |
-| ... | ... | ... | ... |
+| [repeat one row per evaluated criterion with its weight and per-product 1-10 score] | | | |
 | **Weighted total** | **7.8** | **7.2** | **6.9** |
 | **Key limitation** | [issue] | [issue] | [issue] |
 6. **Independent Test Results** — summarize findings from HIGH-tier testing organizations

@@ -125,6 +125,23 @@ allowed-tools: ["Read", "Write", "Bash"]
 Instructions for Claude. Use `$ARGUMENTS` for user-provided arguments.
 ```
 
+## Model Compatibility
+
+This project targets Claude Opus 4.7 as the primary model. All instruction
+content (CLAUDE.md/AGENTS.md, skills, agents, commands) must be safe under
+4.7's literal instruction interpretation:
+
+- Use inspectable predicates (file-pattern matches, regex, explicit enum lists)
+  instead of vague adjectives like "relevant", "appropriate", "as needed"
+- State subagent-launch rules explicitly: which agents, one Task call per agent,
+  all Task calls in the same assistant message
+- Avoid `etc.`, open-ended `...`, and trailing ellipses in instruction text;
+  enumerate exhaustively or reference a specific numbered section
+- Replace `...` in output templates with `[repeat one entry per X]` directives —
+  a literal model may reproduce `...` verbatim otherwise
+- When stating an absolute rule (`always`, `never`), co-locate the concrete
+  exception if one exists, rather than contradicting it in a later paragraph
+
 ## Adding MCP Servers
 
 ### Bundled with a plugin
