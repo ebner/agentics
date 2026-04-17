@@ -30,7 +30,7 @@ For each topic, run the full single-topic pipeline (STEP 0.5 through STEP 9):
 - Each topic gets its own domain classification, sub-questions, and sub-agents
 - Each topic produces its own report file and sources JSON
 - Maintain a **global URL registry** across topics for deduplication
-- Between topics, output a brief status: "Topic [N]/[total] complete: [topic]. Starting next..."
+- Between topics, output a brief status: "Topic [N]/[total] complete: [topic]. Starting topic [N+1]."
 
 ### 3. Global URL registry
 Track all URLs fetched across all topics. When starting a new topic:

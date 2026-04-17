@@ -28,7 +28,7 @@ Workflow:
 1. Ask the user which finding/section to drill into
 2. Re-read the existing report file and sources JSON from disk
 3. Identify the relevant sub-question(s) and existing sources
-4. Spawn 1-2 focused sub-agents (via Task) with:
+4. Spawn 1-2 focused sub-agents via Task. When spawning more than one, use one Task call per sub-agent and place all Task calls in the same assistant message so they run in parallel. Each sub-agent receives:
    - The specific finding as the research focus
    - Existing sources as context (avoid re-fetching)
    - Narrower, more specific queries targeting depth
@@ -44,7 +44,7 @@ Workflow:
 1. Ask the user what related topic to explore
 2. Re-read the existing report to understand context
 3. Create 1-3 new sub-questions for the extension topic
-4. Spawn sub-agents (via Task) with:
+4. Spawn sub-agents via Task — one Task call per sub-question, all Task calls in the same assistant message. Each sub-agent receives:
    - The new sub-questions
    - The URL skip list from the existing sources JSON (avoid re-fetching)
    - The same domain profile as the original research
@@ -66,7 +66,7 @@ Workflow:
 1. Ask the user which section(s) to update and any recency preference
    (e.g., "last 30 days only", "2025+ sources only")
 2. Re-read the existing report and sources JSON
-3. Spawn 1-2 sub-agents (via Task) with:
+3. Spawn 1-2 sub-agents via Task. When spawning both, use one Task call per sub-agent and place both Task calls in the same assistant message. Each sub-agent receives:
    - Queries from the original sub-questions, modified with date filters
    - Instruction to find sources newer than those in the existing report
 4. Merge new findings into the existing section (don't replace -- add)

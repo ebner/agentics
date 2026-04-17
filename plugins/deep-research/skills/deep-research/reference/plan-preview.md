@@ -13,7 +13,7 @@ Show a compact 2-3 line summary and proceed immediately:
 ```
 Researching: [topic]
 Sub-questions: [count] | Domain: [detected] | Mode: quick | Searches: ~10-15
-Starting research...
+Starting research.
 ```
 
 Do NOT use AskUserQuestion — quick mode should not add interaction overhead.

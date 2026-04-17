@@ -22,7 +22,7 @@ single most important number or data point from the research.]
 ## 1. [First major theme/finding]
 **Key takeaway: [1-2 sentence bold summary of this section's main finding.]**
 
-[Detailed analysis with inline citations numbered [1], [2], [3], ... [N] matching the References list order]
+[Detailed analysis with inline citations numbered [1], [2], [3], continuing sequentially up to [N], matching the References list order]
 [Include specific data points, numbers, comparisons]
 [Write in prose (≥80%), not bullet lists]
 
@@ -73,12 +73,12 @@ encountered and rejected.]
 ```json
 {
   "meta": {
-    "topic": "...",
-    "mode": "...",
-    "domain_detected": "...",
-    "risk_level": "...",
+    "topic": "<topic string>",
+    "mode": "<mode name>",
+    "domain_detected": "<domain id>",
+    "risk_level": "<LOW | MEDIUM | HIGH>",
     "search_languages": ["en", "de"],
-    "date": "...",
+    "date": "<YYYY-MM-DD>",
     "waves_completed": 3,
     "termination_reason": "saturation",
     "total_searches": 47,
@@ -91,17 +91,20 @@ encountered and rejected.]
   "sources": [
     {
       "id": 1,
-      "url": "...",
-      "title": "...",
+      "url": "<full URL>",
+      "title": "<page title>",
       "language": "en",
       "credibility": "high",
       "access": "full",
-      "accessed": "...",
-      "key_claims": ["..."]
+      "accessed": "<YYYY-MM-DD>",
+      "key_claims": ["<short claim sentence>"]
     }
   ]
 }
 ```
+
+Replace each `<...>` placeholder with the actual value when writing the file;
+repeat the `sources` object once per cited source, incrementing `id`.
 
 ---
 
@@ -143,7 +146,7 @@ For claims supported by multiple sources: [1][3][7]
 
 Sources in non-English languages: preserve the original title, note the language:
 ```
-[15] "Leitlinie zur Behandlung von..." — https://awmf.org/... (credibility: high, language: de)
+[15] "<original-language title>" — <source URL> (credibility: high, language: de)
 ```
 
 ### Writing quality rules

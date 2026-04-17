@@ -308,7 +308,7 @@ After analysis, output a brief status update:
 ```
 Wave [N] complete: [X] sources found ([Y] high, [Z] medium credibility).
 Coverage: [list sub-questions with HIGH/MEDIUM/LOW status].
-[Gaps: brief description]. Starting wave [N+1]...
+Gaps: [brief description]. Starting wave [N+1].
 ```
 
 ---
@@ -360,7 +360,7 @@ For health, finance, and legal topics, apply mandatory additional verification:
 
 - Every factual claim must be from a preferred domain source or corroborated by one
 - **Recency check**: medical/financial claims must be within 2 years
-- **Consensus check**: verify against institutional authorities (WHO, SEC, etc.)
+- **Consensus check**: verify against the institutional authority for the topic's domain. For health topics: WHO, CDC, or the country-level equivalent. For finance topics: SEC or the national securities regulator. For legal topics: the primary legislature or supreme court for the jurisdiction. For other domains: the preferred-source list in the domain's `reference.md`.
 - **Misinformation flagging**: explicitly flag any claim that:
   - Contradicts institutional consensus without peer-reviewed support
   - Comes only from sources with commercial interest

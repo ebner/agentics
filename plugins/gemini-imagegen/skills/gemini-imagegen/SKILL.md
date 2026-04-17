@@ -227,7 +227,7 @@ template: |
   Style requirements:
   - Primary color: teal (#3D9A8B) with lighter tints
   - Background: pure white (#FFFFFF)
-  ...
+  # [remaining style-requirement bullets go here]
   Subject: {content}
 
 final_prompt: |
@@ -235,7 +235,7 @@ final_prompt: |
   Style requirements:
   - Primary color: teal (#3D9A8B) with lighter tints
   - Background: pure white (#FFFFFF)
-  ...
+  # [remaining style-requirement bullets go here]
   Subject: An empty document inbox with a single document floating gently,
   suggesting the space is ready to be filled.
 
