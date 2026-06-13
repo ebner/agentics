@@ -64,8 +64,9 @@ are for ad-hoc human use). `codex exec` and `codex review` are OpenAI's Stable a
   OS-enforced egress control.
 - **Deliver the prompt via stdin redirect** (`< promptfile`). A `codex exec` with a *positional*
   prompt and *unredirected* stdin **hangs** in a non-TTY / background context: it still reads stdin
-  (`"Reading prompt from stdin..."`), which never reaches EOF. Use `< file` (or `< /dev/null` if the
-  prompt must be positional).
+  (the CLI prints `"Reading prompt from stdin..."` or, on newer versions, `"Reading additional
+  input from stdin..."`), which never reaches EOF. Use `< file` (or `< /dev/null` if the prompt must
+  be positional).
 - **Capture the result with `-o <file>`** (it writes the final message). Do not parse
   `--output-schema` output as the result — intermediate messages also conform to the schema, and it
   is unreliable on `resume`; mandate a `VERDICT:` line instead. Use `--json` (event stream) to read
