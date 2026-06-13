@@ -4,13 +4,14 @@ Hand an **already-approved** implementation plan to **OpenAI Codex** for impleme
 official `codex` CLI, with cross-model review on both ends. The orchestrating model orchestrates and
 reviews; **Codex writes all the code, edit-only and offline.**
 
-Three components, one shared convention:
+Components, one shared convention:
 
 | Component | What it is |
 |-----------|------------|
 | `/codex-orchestration:codex-implement` | **Command** — linear handoff: plan review (orchestrator + Codex) → per-phase implement / verify / fix → close-out. |
-| `codex-implement-fanout` | **Workflow** — parallel fan-out: decompose → parallel worktree implementers (edit-only Codex) → verify/merge gate → final verify. |
-| `calling-codex` | **Skill** — the shared Codex-invocation convention (edit-only, network-off, sandbox, flags). Loaded by both of the above. |
+| `/codex-orchestration:codex-implement-fanout` | **Command** — launcher for the fan-out workflow: resolves the plan, discovers the workflow script, and runs it (auto-registered; no `ultracode`/path needed). |
+| `codex-implement-fanout` | **Workflow** — the fan-out engine the launcher runs: decompose → parallel worktree implementers (edit-only Codex) → verify/merge gate → final verify. |
+| `calling-codex` | **Skill** — the shared Codex-invocation convention (edit-only, network-off, sandbox, flags). Loaded by the commands and the workflow. |
 
 ## Prerequisites
 
@@ -44,18 +45,20 @@ network; the orchestrator runs every build/test.
 
 ## Usage — the fan-out workflow (decomposable plans, parallel)
 
-The workflow uses the multi-agent **Workflow** runner, which requires an **explicit opt-in** (it spawns
-many agents and Codex sessions). You only supply the plan path — the workflow's decompose step derives
-the units and dependency waves itself.
+**Easiest — the launcher command** (auto-registered on install; no `ultracode`, no path juggling):
 
-**Opt in by any one of:**
-- Including the keyword **`ultracode`** in your request (e.g. *"ultracode — implement the approved plan
-  at `<path>` by fanning out via Codex"*), or
-- Asking to run the workflow by name (e.g. *"run the `codex-implement-fanout` workflow with
-  planPath=`<path>`"*).
+```
+/codex-orchestration:codex-implement-fanout [path/to/plan.md] [--base <branch>] [--integration <branch>]
+```
 
-**Two ways to launch it** (plugin workflows are not auto-registered as named workflows — named
-resolution only reads the project's `.claude/workflows/` + built-ins):
+It resolves the plan, discovers the installed workflow script, and launches it — and **invoking it is
+itself the Workflow opt-in**. You supply only the plan path; the workflow's decompose step derives the
+units and dependency waves itself. (Spawns many parallel agents + Codex sessions — meant for large,
+decomposable plans.)
+
+**Manual alternatives**, if you prefer to drive the Workflow tool yourself (plugin workflows are not
+auto-registered as named workflows — name resolution only reads the project's `.claude/workflows/` +
+built-ins):
 
 ```bash
 # A) By scriptPath, from the installed plugin (dynamic-discover the cache path):
@@ -65,6 +68,9 @@ WF=$(find ~/.claude -path '*/codex-orchestration/workflows/codex-implement-fanou
 # B) As a named workflow, after copying it into your project:
 cp "$WF" .claude/workflows/codex-implement-fanout.mjs
 # → Workflow({ name: 'codex-implement-fanout', args: { planPath: '/abs/path/to/plan.md', base: 'main' } })
+
+# C) Via the ultracode keyword (opt-in), letting the model decompose + launch:
+#    "ultracode — implement the approved plan at /abs/path/to/plan.md by fanning out via Codex"
 ```
 
 `args`: `planPath` (required, absolute), `base` (default `main`), `integrationBranch`
@@ -130,46 +136,18 @@ It resolves the current session's plan automatically; or pass a path explicitly:
 Codex reviews the plan, implements each phase edit-only, the orchestrator builds/verifies between
 phases, and it ends with a consolidated pre-PR report. Nothing is committed.
 
-### 2. Fan out a large plan with `ultracode`
+### 2. Fan out a large plan — the launcher command (easiest)
 
 ```
-ultracode — implement the approved plan at /abs/path/to/plan.md by fanning out via Codex
+/codex-orchestration:codex-implement-fanout /abs/path/to/plan.md
 ```
 
-`ultracode` is the opt-in that authorizes the multi-agent workflow. You supply only the plan path; the
-workflow's decompose step derives the units and dependency waves itself.
+That's it — the command resolves the plan, discovers the installed workflow script, and launches the
+fan-out (no `ultracode`, no path juggling). Override defaults with `--base <branch>` or
+`--integration <branch>`. To drive the Workflow tool manually instead (scriptPath,
+copy-to-`.claude/workflows/`, or the `ultracode` keyword), see *Usage — the fan-out workflow* above.
 
-### 3. Run the fan-out workflow by name (copy it into your project first)
-
-```bash
-WF=$(find ~/.claude -path '*/codex-orchestration/workflows/codex-implement-fanout.mjs' -print -quit)
-mkdir -p .claude/workflows && cp "$WF" .claude/workflows/
-```
-
-Then ask:
-
-```
-run the codex-implement-fanout workflow with planPath=/abs/path/to/plan.md and base=main
-```
-
-→ `Workflow({ name: 'codex-implement-fanout', args: { planPath: '/abs/path/to/plan.md', base: 'main' } })`
-
-### 4. Run the fan-out workflow by scriptPath (no copy), integrating into a feature branch
-
-```
-run the codex-implement-fanout workflow on /abs/path/to/plan.md, integrating into feature/rate-limiter
-```
-
-→ resolves to:
-
-```
-WF=$(find ~/.claude -path '*/codex-orchestration/workflows/codex-implement-fanout.mjs' -print -quit)
-Workflow({ scriptPath: WF,
-           args: { planPath: '/abs/path/to/plan.md', base: 'main',
-                   integrationBranch: 'feature/rate-limiter' } })
-```
-
-### 5. What the fan-out produces
+### 3. What the fan-out produces
 
 For a plan with units A and B (independent) and C (depends on A):
 
