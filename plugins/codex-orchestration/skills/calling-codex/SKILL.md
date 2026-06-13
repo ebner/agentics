@@ -81,22 +81,27 @@ are for ad-hoc human use). `codex exec` and `codex review` are OpenAI's Stable a
 ## Reference command lines
 
 ```bash
-# Plan review (read-only; plan embedded in the prompt file):
+# Use mktemp for every capture file — avoid predictable /tmp paths.
+
+# Plan review (read-only; write the review brief + plan into "$prompt"):
+prompt=$(mktemp); out=$(mktemp)
 codex exec -s read-only -c 'approval_policy="never"' -c 'model_reasoning_effort="xhigh"' \
-  -o /tmp/planreview.out < /tmp/planreview.prompt
+  -o "$out" < "$prompt"
 
-# Implementation (edit-only; network off; capture session id):
+# Implementation (edit-only; network off; capture session id; write the handoff into "$handoff"):
+handoff=$(mktemp); out=$(mktemp); jsonl=$(mktemp)
 codex exec -s workspace-write -c 'approval_policy="never"' -c 'model_reasoning_effort="xhigh"' \
-  --json -o /tmp/impl.out < /tmp/impl.handoff > /tmp/impl.jsonl
-SESSION_ID=$(jq -r 'select(.type=="thread.started").session_id' /tmp/impl.jsonl | head -1)
+  --json -o "$out" < "$handoff" > "$jsonl"
+SESSION_ID=$(jq -r 'select(.type=="thread.started").session_id' "$jsonl" | head -1)
 
-# Gap-fix (resume the same session):
+# Gap-fix (resume the same session; write gaps + verbatim failures into "$fix"):
+fix=$(mktemp)
 codex exec resume "$SESSION_ID" -s workspace-write -c 'approval_policy="never"' \
-  -c 'model_reasoning_effort="xhigh"' -o /tmp/fix.out < /tmp/fix.prompt
+  -c 'model_reasoning_effort="xhigh"' -o "$(mktemp)" - < "$fix"
 
-# Structured diff review (full changeset):
-codex review --uncommitted -c 'model_reasoning_effort="xhigh"' -o /tmp/review-uncommitted.out
-codex review --base origin/<base> -c 'model_reasoning_effort="xhigh"' -o /tmp/review-base.out
+# Structured diff review (full changeset) — approval_policy explicit, stdin redirected:
+codex review --uncommitted -c 'approval_policy="never"' -c 'model_reasoning_effort="xhigh"' -o "$(mktemp)" < /dev/null
+codex review --base origin/<base> -c 'approval_policy="never"' -c 'model_reasoning_effort="xhigh"' -o "$(mktemp)" < /dev/null
 ```
 
 Run a long implementation or review in the background (in Claude Code, Bash `run_in_background: true`)
@@ -114,7 +119,11 @@ network-free and minimizes its footprint:
   `go.mod`, `Makefile`), and runs typecheck / build / lint / test itself.
 - For a multi-step plan, the orchestrator runs a **per-phase loop**: Codex implements one phase
   (offline, via `codex exec resume` to carry context across phases), then the orchestrator
-  builds/verifies that phase and feeds any failure back to Codex before the next phase.
+  builds/verifies that phase and feeds any failure back to Codex before the next phase. **The failure
+  handback must be the full verbatim output** — the exact commands, their stderr, errors with
+  `file:line`, failing-test assertion diffs, and stack traces (root errors first, capped, never a
+  summary). Codex did not run the build, so this is its only view of the failure; it then reads the
+  cited files and fixes.
 - Codex's handoff prompt must forbid: commits, pushes, dependency additions without flagging, builds
   / tests / installs / network commands, and edits outside the named in-scope files. It must honor
   the target project's own conventions as documented in that project's `CLAUDE.md` / `AGENTS.md`.

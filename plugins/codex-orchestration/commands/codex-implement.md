@@ -130,9 +130,12 @@ Record P against the plan: Fully Implemented / Compromises / Outstanding.
 
 ### 2c. Fix loop for P (≤ 2 rounds)
 
-If P's verify fails or P has outstanding items, resume Codex (edit-only) with the specific gaps +
-failing output (per the `calling-codex` skill). Re-run 2b. Cap 2 fix rounds per phase; if P still
-fails, stop and surface the residual (genuine fork). On success, advance to P+1.
+If P's verify fails or P has outstanding items, resume Codex (edit-only) with the gaps + the **full
+verbatim failing output** — the exact command(s) run, their stderr, compiler/type errors with
+`file:line`, failing test names with assertion diffs, and stack traces (root errors first; cap the
+volume but do **not** summarize or paraphrase). Codex did not run the build, so this prompt is its only
+view of the failure; also tell it to read the cited files. Re-run 2b. Cap 2 fix rounds per phase; if P
+still fails, stop and surface the residual (genuine fork). On success, advance to P+1.
 
 After the last phase, do a whole-changeset pass against the plan (Fully Implemented / Compromises /
 Outstanding), annotate any accepted compromises into the plan file, then go to Stage 3.

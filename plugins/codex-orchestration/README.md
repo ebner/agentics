@@ -89,10 +89,13 @@ The workflow guarantees per-agent isolation and automatic integration:
 - **Each agent commits to its own branch.** Inside its worktree the agent bases off the integration
   branch, drives edit-only Codex, then commits the unit's changes to `codex/unit-<id>`. Branches are
   repo-global, so the gate sees them even after a worktree is cleaned.
-- **Automatic merge after completion.** When a wave's agents finish, the sequential verify/merge gate
-  **merges each unit branch into the integration branch** (`git merge --no-ff`), runs the project's
-  build/verify, and keeps the merge only if green — it reverts on red and aborts on a non-trivial
-  conflict (never force-merges). The next wave bases off the updated integration branch.
+- **Automatic merge + per-unit fix loop.** When a wave's agents finish, the sequential verify/merge
+  gate **merges each unit branch into the integration branch** (`git merge --no-ff`) and runs the
+  project's build/verify. On a **red build** it captures the verbatim failing output, **resumes that
+  unit's Codex session with it, re-commits on a fresh fix branch, and re-gates (≤ 2 fix rounds)** before
+  giving up on the unit. It keeps a merge only when green, reverts on red, and aborts on a non-trivial
+  conflict (conflicts are not auto-fixed; never force-merges). The next wave bases off the updated
+  integration branch.
 - **Where the result lands.** The merged, verified result is on `integrationBranch` (default
   `codex-fanout/integration`); set `args.integrationBranch` to your feature branch to integrate there
   directly. Nothing is pushed and nothing is merged to your base branch — that final merge is yours to

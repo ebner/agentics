@@ -1,6 +1,6 @@
 {
   "name": "codex-orchestration",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Hand approved plans to OpenAI Codex for implementation via the official codex CLI — a linear plan-handoff command and a fan-out workflow, sharing one edit-only, network-off Codex-invocation convention",
   "author": {
     "name": "Hannes Ebner"

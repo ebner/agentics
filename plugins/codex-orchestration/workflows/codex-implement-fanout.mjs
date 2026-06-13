@@ -111,6 +111,7 @@ const GATE_SCHEMA = {
     buildPassed: { type: 'boolean' },
     reason: { type: 'string' },
     failures: { type: 'array', items: { type: 'string' } },
+    failureLog: { type: 'string' },
   },
   required: ['unitId', 'merged', 'reason'],
 }
@@ -167,10 +168,11 @@ function implPrompt(unit) {
     `2. Write a Codex handoff prompt FILE for THIS unit (GPT-5.x blocks: <task> with the unit's files/criteria/tests,`,
     `   the relevant plan excerpt, <grounding_rules> [follow the project's documented conventions in its CLAUDE.md/AGENTS.md],`,
     `   <action_safety> [in-scope files only; NO commit/push; NO builds/tests/installs/network — the gate verifies], <completeness_contract>).`,
-    `3. Run Codex EDIT-ONLY, network off, prompt via STDIN REDIRECT, per the calling-codex skill (disable the harness Bash sandbox on this call):`,
+    `3. Write the handoff prompt to a temp file, then run Codex EDIT-ONLY, network off, prompt via STDIN REDIRECT, per the calling-codex skill (disable the harness Bash sandbox on this call). Use mktemp — avoid predictable /tmp paths:`,
+    `     handoff=$(mktemp); out=$(mktemp); jsonl=$(mktemp)   # write the handoff prompt into "$handoff"`,
     `     codex exec -s workspace-write -c 'approval_policy="never"' -c 'model_reasoning_effort="xhigh"' \\`,
-    `       --json -o /tmp/impl-${unit.id}.out < /tmp/impl-${unit.id}.handoff > /tmp/impl-${unit.id}.jsonl`,
-    `   Capture sessionId: jq -r 'select(.type=="thread.started").session_id' /tmp/impl-${unit.id}.jsonl | head -1`,
+    `       --json -o "$out" < "$handoff" > "$jsonl"`,
+    `   Capture sessionId: jq -r 'select(.type=="thread.started").session_id' "$jsonl" | head -1`,
     `   Non-zero exit / empty -o -> status:"failed".`,
     `4. Commit the unit's changes (Codex never commits — you do):`,
     `     git add -A && git commit -m "codex unit ${unit.id}: ${unit.title}"`,
@@ -192,9 +194,32 @@ function gatePrompt(unit, impl) {
     `2. Merge the unit branch:  git merge --no-ff --no-edit "${impl.branch}"`,
     `   - On conflict: resolve ONLY if trivial and obviously correct. Otherwise: git merge --abort, return merged:false, reason:"conflict", and STOP — never force-merge.`,
     `3. Build/verify the project's FAST gate. DISCOVER the commands from the project's CLAUDE.md / AGENTS.md / README or its build config (package.json scripts, pom.xml, Cargo.toml, go.mod, Makefile): typecheck / build / lint as the project defines them, then this unit's tests (${unit.tests}). You may use network + toolchain.`,
-    `4. If green -> keep the merge (merged:true, buildPassed:true). If red -> undo it (git reset --hard HEAD~1) so the integration branch stays buildable; return merged:false with the failures.`,
+    `4. If green -> keep the merge (merged:true, buildPassed:true). If red -> undo it (git reset --hard HEAD~1) so the integration branch stays buildable; return merged:false.`,
+    `   On a red BUILD (not a conflict), put the FULL VERBATIM failing output into failureLog — the exact commands, their stderr, errors with file:line, failing-test names + assertion diffs, and stack traces (root errors first; cap ~200 lines; do NOT summarize). A fix agent feeds this straight back to Codex, which never ran the build. On a conflict, leave failureLog empty (conflicts are not auto-fixed).`,
     `   (The heavy/slow suite runs once in the Final verify phase, not per unit.)`,
     `Return the structured result. Do NOT push.`,
+  ].join('\n')
+}
+
+function fixPrompt(unit, impl, failureLog, round) {
+  return [
+    `You are a FIX agent for work unit "${unit.id}" (gate round ${round}). You run in an isolated git worktree.`,
+    `Follow the \`calling-codex\` skill — you delegate ALL edits to edit-only Codex; you do NOT write feature code yourself.`,
+    `The gate merged this unit and the project build/verify FAILED. Hand the verbatim failing output (at the end) to Codex unchanged so it can fix; do not summarize it.`,
+    ``,
+    `Steps:`,
+    `1. Get a worktree on the unit's code, on a fresh fix branch (avoids "already checked out" conflicts):`,
+    `     git fetch --quiet || true`,
+    `     git checkout -B codex/unit-${unit.id}-r${round} "${impl.branch}"`,
+    `2. Write the failing output below, plus "fix ONLY these failures; stay in the unit's in-scope files; do NOT build/test/commit/install or use the network", into a prompt file, then resume the unit's Codex session (edit-only, network off, stdin redirect, harness Bash sandbox disabled) per the calling-codex skill:`,
+    `     codex exec resume "${impl.sessionId}" -s workspace-write -c 'approval_policy="never"' -c 'model_reasoning_effort="xhigh"' -o "$(mktemp)" - < "$FIXPROMPT"`,
+    `   (If "${impl.sessionId}" is empty, start a fresh codex exec instead, embedding the unit spec from the plan plus the failures.)`,
+    `3. Commit the fix:  git add -A && git commit -m "codex unit ${unit.id} fix r${round}"`,
+    ``,
+    `Return the structured result with branch = "codex/unit-${unit.id}-r${round}", status, and the resumed sessionId. Do NOT build, test, or push.`,
+    ``,
+    `--- VERBATIM GATE FAILURE OUTPUT ---`,
+    failureLog || '(none captured)',
   ].join('\n')
 }
 
@@ -258,13 +283,26 @@ for (let w = 0; w < waves.length; w++) {
     if (impl.outOfScopeFiles && impl.outOfScopeFiles.length) {
       log(`  ${unit.id}: Codex touched out-of-scope files: ${impl.outOfScopeFiles.join(', ')}`)
     }
-    const gate = await agent(gatePrompt(unit, impl), { schema: GATE_SCHEMA, label: `gate:${unit.id}`, phase: 'Verify & merge' })
+    // Gate, then a bounded fix loop: on a red build the gate returns a verbatim failureLog; resume
+    // the unit's Codex session with it, re-commit on a fresh fix branch, and re-gate (<= 2 rounds)
+    // before giving up. Conflicts (empty failureLog) are not auto-fixed.
+    let state = impl
+    let gate = await agent(gatePrompt(unit, state), { schema: GATE_SCHEMA, label: `gate:${unit.id}`, phase: 'Verify & merge' })
+    let round = 0
+    while (gate && !gate.merged && gate.failureLog && state.sessionId && round < 2) {
+      round++
+      log(`  ${unit.id}: gate failed (round ${round}) — handing verbatim failures back to Codex`)
+      const fixed = await agent(fixPrompt(unit, state, gate.failureLog, round), { isolation: 'worktree', schema: IMPL_SCHEMA, label: `fix:${unit.id}#${round}`, phase: 'Verify & merge' })
+      if (!fixed || fixed.status !== 'done') break
+      state = fixed
+      gate = await agent(gatePrompt(unit, state), { schema: GATE_SCHEMA, label: `gate:${unit.id}#${round}`, phase: 'Verify & merge' })
+    }
     if (gate && gate.merged) {
       integrated.push(unit.id)
-      log(`  ${unit.id}: verified + merged`)
+      log(`  ${unit.id}: verified + merged${round ? ` (after ${round} fix round(s))` : ''}`)
     } else {
       failedUnits.push(unit.id)
-      log(`  ${unit.id}: gate failed — ${(gate && gate.reason) || 'unknown'}`)
+      log(`  ${unit.id}: gate failed after ${round} fix round(s) — ${(gate && gate.reason) || 'unknown'}`)
     }
   }
 }
