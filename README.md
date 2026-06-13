@@ -11,6 +11,7 @@ A collection of advanced Claude Code plugins for research, content generation, a
 # Install individual plugins:
 /plugin install deep-research@agentics
 /plugin install gemini-imagegen@agentics
+/plugin install codex-orchestration@agentics
 ```
 
 ## Plugins
@@ -32,6 +33,16 @@ Image generation and editing using Google's Gemini API. Supports text-to-image,
 image editing, SVG vector generation, multi-image composition, multi-turn
 refinement, and automatic transparency conversion. Includes prompt sidecar
 metadata files for reproducibility.
+
+### codex-orchestration
+
+Hand an already-approved implementation plan to OpenAI Codex for implementation via the official
+`codex` CLI. Provides the `/codex-orchestration:codex-implement` command (linear handoff: cross-model
+plan review → per-phase implement/verify/fix → close-out), the `codex-implement-fanout` workflow
+(parallel fan-out: decompose → isolated worktree implementers → verify/merge gate), and the
+`calling-codex` skill (the shared edit-only, network-off Codex-invocation convention). Codex writes the
+code edit-only and offline; the orchestrator owns every build, test, and merge. Project-agnostic — the
+build/test gate is discovered from the target project's own config.
 
 ## License
 

@@ -494,7 +494,7 @@ with open("output.svg", "w") as f:
 
 - Output quality depends on scene complexity — simple icons are excellent, photorealistic scenes are poor
 - Results vary between runs — regenerate if the first attempt isn't right
-- Not suitable for the envelore branded illustration style (vault motifs with soft shadows, diffused lighting)
+- Not suitable for richly-shaded branded illustration styles (soft shadows, diffused lighting, complex layered motifs)
 - Cannot edit existing raster images — use Nano Banana 2 for that
 - A `.prompt` sidecar file is created alongside the SVG, same as for raster images
 
