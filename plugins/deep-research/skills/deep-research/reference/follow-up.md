@@ -97,6 +97,11 @@ End the research session. No further action needed.
 - Always re-read the report file from disk for each follow-up round (don't rely on
   context memory)
 - Follow-up sub-agents get their own context via Task -- keeps the orchestrator lean
+- **Spawn every follow-up sub-agent with `model: "sonnet"`** (same worker tiering as
+  STEP 3 — workers retrieve, the orchestrator keeps its session model)
+- Follow-up sub-agents follow the same output contract as STEP 3: write the full evidence
+  log to `./research-output/.interim-[topic-slug]/followup-[K].md` and return only a
+  compact Source Index + Cluster Synthesis. Delete these files when the round is appended.
 - Each follow-up round should be focused and narrow (1-2 sub-agents max)
 - After 3+ follow-up rounds, suggest starting a new session if the topic has shifted
   significantly

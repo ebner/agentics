@@ -45,8 +45,13 @@ project directory you start Claude Code from.
 
 - **Claude Code** with WebSearch enabled (requires Anthropic first-party API;
   WebSearch is not available on Bedrock/Vertex)
-- No additional dependencies — the skill uses only Claude Code's built-in tools
+- No additional dependencies for the default path — the skill uses only Claude Code's
+  built-in tools
 - Optional: `markitdown-mcp` for PDF/YouTube content extraction
+- Optional: `FIRECRAWL_API_KEY` (a [Firecrawl](https://firecrawl.dev) account) — enables a
+  hosted-scrape fallback for JS-rendered or bot-blocked pages that WebFetch cannot retrieve.
+  **Off by default**; when unset, fetching behaves exactly as before. Uses `curl` and
+  `python3` (only to parse the API response), both standard on macOS/Linux.
 
 ### Permissions setup (important)
 
@@ -84,10 +89,12 @@ Or grant permissions interactively during your first session by selecting
 | `WebSearch` | Search queries across all sub-agents | 10–100+ |
 | `WebFetch` | Fetch and analyze web pages | 10–200+ |
 | `mcp__markitdown__convert_to_markdown` | PDF/YouTube fallback (optional) | 0–10 |
+| `Bash(curl:*)` | Firecrawl scrape fallback — only if `FIRECRAWL_API_KEY` is set | 0–10 |
 
 The other tools the skill uses (`Task`, `Read`, `Write`, `Bash`, `Glob`,
 `AskUserQuestion`) are typically auto-approved by Claude Code and don't need
-explicit permission configuration.
+explicit permission configuration. If you enable the Firecrawl fallback, also allow its
+scrape call by adding `"Bash(curl:*)"` to the allow list (or approve it once interactively).
 
 ## Usage
 
@@ -169,6 +176,19 @@ standard mode more aggressive:
 ```
 | standard   | 30-50    | 50-100  | 4          | 10-20 min  |
 ```
+
+### Tuning model cost (token optimization)
+
+The parallel worker sub-agents run on **Sonnet** by default, while the orchestrator stays
+on your session model. Mechanical retrieval (search → fetch → extract → log) doesn't need a
+frontier model, so this tiering is the biggest cost lever and has no impact on research
+quality — the quality-critical scoping, triangulation, and synthesis all run in the
+orchestrator. Workers also write their full evidence to interim files and return only a
+compact summary, which keeps the orchestrator's context (and token use) flat across waves.
+
+To change the worker tier, edit the model-tiering instruction in `SKILL.md` STEP 3:
+`haiku` for the cheapest runs (fine for low-risk domains), or `opus` for maximum worker
+depth. The orchestrator tier is never lowered.
 
 ### Adding domain-specific search patterns
 
@@ -367,8 +387,10 @@ Choose based on your primary need:
 | **Grok** | SuperGrok | $30 | Heavy mode requires $300/mo |
 | **MS Copilot** | Enterprise | $30/user/mo | Only 25 Researcher queries; insufficient |
 
-³ API cost estimate assumes standard mode with Sonnet. Using Opus or ultradeep mode
-increases cost significantly. Quick mode runs are ~$1–3 each.
+³ API cost estimate assumes standard mode. Worker sub-agents run on Sonnet by default
+while the orchestrator keeps your session model, which holds cost down without affecting
+quality; running the orchestrator on Opus or using ultradeep mode increases cost
+significantly. Quick mode runs are ~$1–3 each.
 
 ## Troubleshooting
 

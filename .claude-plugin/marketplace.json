@@ -8,7 +8,7 @@
       "name": "deep-research",
       "source": "./plugins/deep-research",
       "description": "Multi-phase web research with 15 domain-specific agent profiles, iterative deepening, anti-misinformation framework, and citation-backed reports",
-      "version": "1.4.0"
+      "version": "1.5.0"
     },
     {
       "name": "gemini-imagegen",

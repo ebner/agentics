@@ -178,11 +178,31 @@ If the user suggests changes, update the plan and re-display.
 This is the critical phase. Spawn parallel sub-agents using **Task**, each handling
 one sub-question cluster with domain-specific expertise.
 
+### Cost control: model tiering (apply to EVERY Task call in STEP 3, every wave, and follow-ups)
+
+Worker sub-agents do mechanical retrieval (search → fetch → extract → log). They do NOT
+need the orchestrator's model. Pass `model: "sonnet"` on **every** worker Task call. Keep
+the **orchestrator** (this conversation) on its current session model — scoping, routing,
+triangulation (STEP 6), and synthesis (STEP 7) all run in the orchestrator, and those are
+the only quality-critical reasoning steps. Tiering the workers to Sonnet is the single
+biggest token-cost lever and does not reduce research quality.
+
+- Default worker tier: `sonnet`.
+- A user may set the worker tier to `haiku` for the cheapest runs (acceptable for LOW-risk
+  domains), or `opus` for maximum worker depth. Never lower the orchestrator's tier.
+
+### Evidence working directory (create once, before spawning wave 1)
+
+Run `Bash("mkdir -p ./research-output/.interim-[topic-slug]/")` to create an interim
+directory for bulky evidence. Each worker writes its full evidence log to a file in here
+and returns only a compact summary (see the output contract below), so the orchestrator's
+context stays lean across waves. This directory is deleted in STEP 9.
+
 ### Construct sub-agent instructions
 
 For each sub-agent:
 
-1. Read `agents/web-research-agent.md` for the generic core loop (search → fetch → log → synthesize).
+1. Read `agents/web-research-agent.md` for the generic core loop (search → fetch → log → synthesize), the fetch fallback, and the output contract.
 2. Read the domain's `agent.md` from `domains/<domain>/agent.md` for domain-specific
    credibility rules, misinformation signals, and special instructions.
 3. Merge into a single instruction set:
@@ -190,7 +210,7 @@ For each sub-agent:
 ```
 You are a focused research agent operating under the **[domain-name]** profile.
 
-[Generic core loop from agents/web-research-agent.md]
+[Generic core loop, fetch fallback, and output contract from agents/web-research-agent.md]
 
 DOMAIN-SPECIFIC RULES ([domain] domain):
 [Credibility rules from domain agent.md: HIGH/MEDIUM/LOW/REJECT]
@@ -219,7 +239,15 @@ If you encounter any of the following, flag prominently under a DISCOVERIES head
 - A highly authoritative source covering multiple clusters
 Format: DISCOVERY: [type] — [brief description] — [source URL]
 
-Return your full evidence log AND synthesis as structured text.
+EVIDENCE FILE (write your full evidence log here with the Write tool — do NOT return it inline):
+./research-output/.interim-[topic-slug]/wave-[N]-cluster-[K].md
+
+OUTPUT CONTRACT:
+- Write your full evidence log to the EVIDENCE FILE path above.
+- Return ONLY: a compact Source Index (one line per source: URL | credibility | relevance
+  | one-line finding), your Cluster Synthesis, the Evidence File path, and any DISCOVERIES.
+- Do NOT return the full evidence log inline — it lives in the file, so the orchestrator
+  stays lean across waves.
 ```
 
 ### Spawn all sub-agents simultaneously
@@ -230,10 +258,11 @@ sub-questions into one Task call, and do NOT serialize them across separate
 messages — both defeat parallelism.
 
 ```
-# One Task call per sub-question from STEP 1, all in the same assistant message:
-Task("Research: [sub-question 1]", merged_instructions_1)
-Task("Research: [sub-question 2]", merged_instructions_2)
-[repeat one Task call per remaining sub-question, up to 12]
+# One Task call per sub-question from STEP 1, all in the same assistant message.
+# Pass model: "sonnet" on every call (worker tiering — see "Cost control" above):
+Task("Research: [sub-question 1]", merged_instructions_1, model: "sonnet")
+Task("Research: [sub-question 2]", merged_instructions_2, model: "sonnet")
+[repeat one Task call per remaining sub-question, up to 12, each with model: "sonnet"]
 ```
 
 Wait for all to complete, then collect results.
@@ -242,6 +271,11 @@ Wait for all to complete, then collect results.
 
 - **One retry** for timeout failures (wait briefly, then retry the same URL)
 - **No retry** for access-denied/paywall — use paywalled strategy below instead
+- **Hosted-scrape fallback (optional, off by default)**: if a promising URL still fails
+  after the retry and `FIRECRAWL_API_KEY` is set in the environment, workers fall back to
+  the Firecrawl scrape API (see `agents/web-research-agent.md` → Fetch fallback) for
+  JS-rendered or bot-blocked pages. Without the key, behavior is unchanged and the fetch
+  is recorded as a gap.
 - **Failure tracking**: if >30% of fetches in a sub-agent fail, flag the cluster
   for orchestrator attention in the analysis step
 - **Failed fetches count as gaps** — they inform the saturation test, not as successes
@@ -271,6 +305,9 @@ If a sub-agent encounters a paywalled source:
 3. Seek free-access alternatives (PubMed Central, press releases, university pages)
 4. If MarkItDown MCP is available (`mcp__markitdown__convert_to_markdown`), use it
    as fallback for PDF URLs that WebFetch cannot handle
+5. If `FIRECRAWL_API_KEY` is set, the Firecrawl scrape fallback (see
+   `agents/web-research-agent.md` → Fetch fallback) can retrieve JS-rendered or
+   bot-blocked pages WebFetch fails on (it does not bypass hard login/paywalls)
 
 ---
 
@@ -278,8 +315,11 @@ If a sub-agent encounters a paywalled source:
 
 After each retrieval wave completes:
 
-1. **Merge and deduplicate** — combine all sub-agent evidence logs. Deduplicate by URL.
-   Add all new URLs to the URL registry.
+1. **Merge and deduplicate** — combine all sub-agent **Source Indexes** (the compact
+   returns, not the full logs). Deduplicate by URL. Add all new URLs to the URL registry.
+   The full evidence stays in the per-cluster files under
+   `./research-output/.interim-[topic-slug]/`; read those files only when you need detail
+   (STEP 6 and STEP 7), not during routing.
 
 2. **Extract discoveries** — scan all sub-agent outputs for DISCOVERY flags:
    - "New sub-topic": evaluate against expansion triggers. If 2+ agents flagged the
@@ -341,7 +381,9 @@ sub-questions. Increment wave number. Return to STEP 3.
 
 ## STEP 6 — TRIANGULATE & VERIFY (domain-specific verification)
 
-After all waves complete:
+After all waves complete, read the per-cluster evidence files from
+`./research-output/.interim-[topic-slug]/` (Read tool) for the full evidence behind each
+finding — the workers' compact returns are not enough for verification.
 
 1. **Cross-reference claims** — for each major finding, verify 2+ sources agree
 2. **Flag contradictions** — note where sources disagree, with URLs
@@ -393,6 +435,9 @@ Proposed: ./research-output/[topic-slug]_[YYYY-MM-DD].md
 
 Write the report in the **same language the user asked the question in**.
 Use `Bash("pwd")` to confirm the project root. Create the output directory if needed.
+Source quotes and full per-source detail live in the interim evidence files under
+`./research-output/.interim-[topic-slug]/` — read them (Read tool) as you assemble each
+section so citations carry the exact numbers, dates, and quotes captured during retrieval.
 
 Generate two files:
 - `[filename].md` — Full research report
@@ -413,7 +458,8 @@ If validation fails, do targeted follow-up research to fill gaps.
 ## STEP 9 — DELIVER
 
 1. Save report and sources JSON to the user's chosen location
-2. Clean up any `.interim-*` files from the research output directory
+2. Delete the interim evidence directory `./research-output/.interim-[topic-slug]/`
+   (and any legacy `.interim-*` files) once the final report is written
 3. Present to user inline:
    - Brief executive summary
    - File paths to report and sources (relative to project root)
@@ -437,13 +483,18 @@ selects "Done".
 
 ## Context window management
 
-For multi-wave research (deep/ultradeep), write intermediate results to files to
-prevent context exhaustion:
+Bulky evidence is kept out of the orchestrator's context by design — this is what keeps
+token consumption down across waves:
 
-1. After each wave, write results to `[output-dir]/.interim-[topic]-wave-[N].md`
-2. Read back only summaries (not raw evidence) for subsequent planning
-3. Raw evidence stays in files for final synthesis
-4. Delete all `.interim-*` files after the final report is written
+1. Each worker writes its **full** evidence log to
+   `./research-output/.interim-[topic-slug]/wave-[N]-cluster-[K].md` and returns only a
+   compact Source Index + Cluster Synthesis (STEP 3 output contract).
+2. The orchestrator plans, routes, and tests saturation (STEP 4/5) from those compact
+   summaries — never from raw evidence.
+3. Full evidence is read back from the interim files only for triangulation (STEP 6) and
+   final synthesis (STEP 7).
+4. Delete the `./research-output/.interim-[topic-slug]/` directory after the final report
+   is written (STEP 9).
 
 ---
 
