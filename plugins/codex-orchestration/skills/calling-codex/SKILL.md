@@ -67,10 +67,13 @@ are for ad-hoc human use). `codex exec` and `codex review` are OpenAI's Stable a
   (the CLI prints `"Reading prompt from stdin..."` or, on newer versions, `"Reading additional
   input from stdin..."`), which never reaches EOF. Use `< file` (or `< /dev/null` if the prompt must
   be positional).
-- **Capture the result with `-o <file>`** (it writes the final message). Do not parse
-  `--output-schema` output as the result — intermediate messages also conform to the schema, and it
-  is unreliable on `resume`; mandate a `VERDICT:` line instead. Use `--json` (event stream) to read
-  the `session_id` from the `thread.started` event.
+- **Capture the result — the mechanism differs by subcommand.** `codex exec` supports `-o <file>` (it
+  writes the final message). `codex review` has **no** `-o`/`--output` flag — passing it exits with a
+  usage error (`Usage: codex review …`) — so capture its review by **redirecting stdout** to a file
+  (`… < /dev/null > "$out" 2>&1`). For `codex exec`, do not parse `--output-schema` output as the
+  result — intermediate messages also conform to the schema, and it is unreliable on `resume`; mandate
+  a `VERDICT:` line instead. Use `--json` (event stream) to read the `session_id` from the
+  `thread.started` event.
 - **Resume with an explicit captured `session_id`, not `--last`** (concurrent worktrees race on
   `--last`).
 - **Sandbox nesting.** Codex enforces its own sandbox via Landlock/seccomp. If the calling harness
@@ -100,14 +103,16 @@ fix=$(mktemp)
 codex exec resume "$SESSION_ID" -s workspace-write -c 'approval_policy="never"' \
   -c 'model_reasoning_effort="xhigh"' -o "$(mktemp)" - < "$fix"
 
-# Structured diff review (full changeset) — approval_policy explicit, stdin redirected:
-codex review --uncommitted -c 'approval_policy="never"' -c 'model_reasoning_effort="xhigh"' -o "$(mktemp)" < /dev/null
-codex review --base origin/<base> -c 'approval_policy="never"' -c 'model_reasoning_effort="xhigh"' -o "$(mktemp)" < /dev/null
+# Structured diff review (full changeset) — codex review has NO -o flag; capture via stdout redirect:
+unc=$(mktemp); base_out=$(mktemp)
+codex review --uncommitted -c 'approval_policy="never"' -c 'model_reasoning_effort="xhigh"' < /dev/null > "$unc" 2>&1
+codex review --base origin/<base> -c 'approval_policy="never"' -c 'model_reasoning_effort="xhigh"' < /dev/null > "$base_out" 2>&1
 ```
 
 Run a long implementation or review in the background (in Claude Code, Bash `run_in_background: true`)
-and read the `-o` file on completion. The CLI has no script-level `--background` flag and no
-`status`/`--wait` to poll.
+and read its captured output on completion — the `-o` file for `codex exec`, or the redirected-stdout
+file for `codex review`. The CLI has no script-level `--background` flag and no `status`/`--wait` to
+poll.
 
 ## Edit-only orchestration pattern
 
