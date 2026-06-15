@@ -20,7 +20,7 @@
       "name": "codex-orchestration",
       "source": "./plugins/codex-orchestration",
       "description": "Hand approved plans to OpenAI Codex for implementation via the official codex CLI — a linear plan-handoff command and a fan-out workflow, sharing one edit-only, network-off Codex-invocation convention",
-      "version": "1.3.0"
+      "version": "1.4.0"
     }
   ]
 }
