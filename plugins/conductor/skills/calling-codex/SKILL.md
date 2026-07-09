@@ -3,10 +3,10 @@ name: calling-codex
 description: >
   How to invoke OpenAI Codex from automation via the official `codex` CLI. Trigger this skill
   whenever you are about to construct a `codex exec` or `codex review` command — for plan review,
-  delegated implementation, gap-fixing, or code review — or when the `codex-implement` command and
-  `codex-implement-fanout` workflow run. Covers the codex-exec-vs-codex-review split, the always-on
-  guardrails (effort, sandbox, approval, network, stdin, output capture, session resume), the
-  edit-only orchestration pattern, and the Linux read-confinement caveat.
+  delegated implementation, gap-fixing, or code review — or when the `/conductor:implement`
+  command or the `implement-fanout` workflow runs. Covers the codex-exec-vs-codex-review split,
+  the always-on guardrails (effort, sandbox, approval, network, stdin, output capture, session
+  resume), the edit-only orchestration pattern, and the Linux read-confinement caveat.
 allowed-tools:
   - Bash
   - Read
@@ -15,10 +15,13 @@ allowed-tools:
 # Calling Codex (official `codex` CLI)
 
 This is the single source of truth for how to drive OpenAI Codex (GPT-5.x) from automation. The
-`codex-implement` command and the `codex-implement-fanout` workflow follow it verbatim. Use the
+`/conductor:implement` command and the `implement-fanout` workflow follow it verbatim. Use the
 official `codex` CLI on `PATH` — not the `openai-codex` plugin's `node …/codex-companion.mjs`
 wrapper (it wraps an Experimental app-server) and not the `/codex:*` plugin slash commands (those
 are for ad-hoc human use). `codex exec` and `codex review` are OpenAI's Stable automation contract.
+
+The backend-neutral contract (spec format, report format, escalation ladder, failure→STATUS
+mapping) lives in the `delegation-doctrine` skill — this skill covers only the codex mechanics.
 
 ## Prerequisites (check once)
 
@@ -45,7 +48,7 @@ are for ad-hoc human use). `codex exec` and `codex review` are OpenAI's Stable a
    inline>"`. Codex's sandbox cannot read paths outside the workspace, so embed the plan text in the
    prompt; end the prompt with one final line `VERDICT: APPROVED` or `VERDICT: REVISE`.
 3. **Task / implementation** → `codex exec -s workspace-write`. Continue an existing run with
-   `codex exec resume <session-id>`.
+   `codex exec resume <session-id>` — note resume's narrower flag set in the Guardrails below.
 
 ## Guardrails — apply on every call
 
@@ -53,6 +56,8 @@ are for ad-hoc human use). `codex exec` and `codex review` are OpenAI's Stable a
   call. Explicit is mandatory: the last-used effort is cached in SQLite and silently overrides
   config, and config-inherited effort can silently drop to a lower level. Use `xhigh` for
   implementation, gap-fixing, and deep plan review; `low` or `medium` only for throwaway checks.
+  The conductor settings key `codex_effort` in `.claude/conductor.local.md` may override the
+  effort for implementation and fix calls; plan-review and `codex review` calls stay `xhigh`.
 - **Approval: `-c 'approval_policy="never"'`.** There is no `-a`/`--ask-for-approval` flag on
   `codex exec` (passing `-a never` is a parse error). `never` means "never *ask*", not "never
   *grant*": Codex runs autonomously **within** the sandbox without prompting, and — having no
@@ -75,7 +80,13 @@ are for ad-hoc human use). `codex exec` and `codex review` are OpenAI's Stable a
   a `VERDICT:` line instead. Use `--json` (event stream) to read the `session_id` from the
   `thread.started` event.
 - **Resume with an explicit captured `session_id`, not `--last`** (concurrent worktrees race on
-  `--last`).
+  `--last`). **`codex exec resume` accepts NO `-s`/`--sandbox` flag** (verified on codex-cli
+  0.143.0 — passing it is a usage error): pass the sandbox as a config override,
+  `-c 'sandbox_mode="workspace-write"'`. `-o`, `--json`, `-c`, and `-m` remain valid on resume.
+  Never resume a session whose previous call timed out — run a fresh `codex exec` instead.
+- **Wall-clock cap on implementation and fix calls.** Prefix them with `timeout 1200`; exit code
+  124 means the cap fired — report `STATUS: timeout` and let the doctrine ladder handle rollback
+  and retry (the `delegation-doctrine` skill defines both).
 - **Sandbox nesting.** Codex enforces its own sandbox via Landlock/seccomp. If the calling harness
   also sandboxes shell commands, the two can conflict and Codex's sandbox fails to initialize — run
   the `codex` Bash call with the harness's own sandbox disabled (in Claude Code: Bash
@@ -92,16 +103,20 @@ prompt=$(mktemp); out=$(mktemp)
 codex exec -s read-only -c 'approval_policy="never"' -c 'model_reasoning_effort="xhigh"' \
   -o "$out" < "$prompt"
 
-# Implementation (edit-only; network off; capture session id; write the handoff into "$handoff"):
+# Implementation (edit-only; network off; wall-clock cap; capture session id;
+# write the handoff into "$handoff"; add -m "$CODEX_MODEL" only when the settings
+# key codex_model is non-empty):
 handoff=$(mktemp); out=$(mktemp); jsonl=$(mktemp)
-codex exec -s workspace-write -c 'approval_policy="never"' -c 'model_reasoning_effort="xhigh"' \
-  --json -o "$out" < "$handoff" > "$jsonl"
+timeout 1200 codex exec -s workspace-write -c 'approval_policy="never"' \
+  -c 'model_reasoning_effort="xhigh"' --json -o "$out" < "$handoff" > "$jsonl"
+# exit 124 -> STATUS: timeout (doctrine ladder handles rollback + retry)
 SESSION_ID=$(jq -r 'select(.type=="thread.started").session_id' "$jsonl" | head -1)
 
-# Gap-fix (resume the same session; write gaps + verbatim failures into "$fix"):
+# Gap-fix (resume the same session; resume takes NO -s flag — sandbox via config override;
+# write gaps + verbatim failures into "$fix"):
 fix=$(mktemp)
-codex exec resume "$SESSION_ID" -s workspace-write -c 'approval_policy="never"' \
-  -c 'model_reasoning_effort="xhigh"' -o "$(mktemp)" - < "$fix"
+timeout 1200 codex exec resume "$SESSION_ID" -c 'sandbox_mode="workspace-write"' \
+  -c 'approval_policy="never"' -c 'model_reasoning_effort="xhigh"' -o "$(mktemp)" - < "$fix"
 
 # Structured diff review (full changeset) — codex review has NO -o flag; capture via stdout redirect:
 unc=$(mktemp); base_out=$(mktemp)
@@ -123,13 +138,12 @@ network-free and minimizes its footprint:
 - The orchestrator discovers the project's verification gate from the project's `CLAUDE.md` /
   `AGENTS.md` / `README`, or from its build config (`package.json` scripts, `pom.xml`, `Cargo.toml`,
   `go.mod`, `Makefile`), and runs typecheck / build / lint / test itself.
-- For a multi-step plan, the orchestrator runs a **per-phase loop**: Codex implements one phase
-  (offline, via `codex exec resume` to carry context across phases), then the orchestrator
-  builds/verifies that phase and feeds any failure back to Codex before the next phase. **The failure
-  handback must be the full verbatim output** — the exact commands, their stderr, errors with
-  `file:line`, failing-test assertion diffs, and stack traces (root errors first, capped, never a
-  summary). Codex did not run the build, so this is its only view of the failure; it then reads the
-  cited files and fixes.
+- For a multi-unit plan, the orchestrator runs a **per-unit loop**: Codex implements one unit
+  (offline), then the orchestrator builds/verifies that unit and feeds any failure back to Codex
+  (via `codex exec resume`) before the next unit. **The failure handback must be the full verbatim
+  output** — the exact commands, their stderr, errors with `file:line`, failing-test assertion
+  diffs, and stack traces (root errors first, capped, never a summary). Codex did not run the
+  build, so this is its only view of the failure; it then reads the cited files and fixes.
 - Codex's handoff prompt must forbid: commits, pushes, dependency additions without flagging, builds
   / tests / installs / network commands, and edits outside the named in-scope files. It must honor
   the target project's own conventions as documented in that project's `CLAUDE.md` / `AGENTS.md`.

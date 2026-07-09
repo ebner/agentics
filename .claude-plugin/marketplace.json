@@ -17,10 +17,10 @@
       "version": "1.5.0"
     },
     {
-      "name": "codex-orchestration",
-      "source": "./plugins/codex-orchestration",
-      "description": "Hand approved plans to OpenAI Codex for implementation via the official codex CLI — a linear plan-handoff command and a fan-out workflow, sharing one edit-only, network-off Codex-invocation convention",
-      "version": "1.4.0"
+      "name": "conductor",
+      "source": "./plugins/conductor",
+      "description": "Plan big, execute small — the coordinating model plans, reviews, and runs every build/test/merge; a cheaper pluggable implementer (OpenAI Codex CLI or a Claude subagent) writes all the code",
+      "version": "1.0.0"
     }
   ]
 }

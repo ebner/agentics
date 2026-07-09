@@ -11,7 +11,7 @@ A collection of advanced Claude Code plugins for research, content generation, a
 # Install individual plugins:
 /plugin install deep-research@agentics
 /plugin install gemini-imagegen@agentics
-/plugin install codex-orchestration@agentics
+/plugin install conductor@agentics
 ```
 
 ## Plugins
@@ -34,15 +34,17 @@ image editing, SVG vector generation, multi-image composition, multi-turn
 refinement, and automatic transparency conversion. Includes prompt sidecar
 metadata files for reproducibility.
 
-### codex-orchestration
+### conductor
 
-Hand an already-approved implementation plan to OpenAI Codex for implementation via the official
-`codex` CLI. Provides the `/codex-orchestration:codex-implement` command (linear handoff: cross-model
-plan review → per-phase implement/verify/fix → close-out), the `codex-implement-fanout` workflow
-(parallel fan-out: decompose → isolated worktree implementers → verify/merge gate), and the
-`calling-codex` skill (the shared edit-only, network-off Codex-invocation convention). Codex writes the
-code edit-only and offline; the orchestrator owns every build, test, and merge. Project-agnostic — the
-build/test gate is discovered from the target project's own config.
+Plan big, execute small — a coordinator/orchestrator for delegated implementation. The
+coordinating model plans (from an approved plan file or a raw task description), reviews, and
+runs every build/test/merge; a cheaper pluggable implementer — the OpenAI Codex CLI (edit-only,
+network-off) or a Claude subagent (edit tools only) — writes all the code. One command
+(`/conductor:implement`) with a linear default and a `--fanout` mode (decompose into
+file-disjoint units → parallel worktree implementers → verify/merge gate). Backend-agnostic
+five-part spec + structured report contract, a cross-backend escalation ladder, cross-model
+review on both ends, and a project-agnostic build/test gate discovered from the target project's
+own config. Replaces the former codex-orchestration plugin.
 
 ## License
 

@@ -1,0 +1,147 @@
+#!/usr/bin/env bash
+# mock-codex — PATH stub standing in for the codex CLI in conductor dev tests.
+#
+# Put the tests/ directory first on PATH (PATH="$(dirname "$0"):$PATH", with this file named
+# `codex` via a symlink or copy) and the conductor command/workflow will drive this instead of
+# the real CLI. It has two jobs:
+#
+#   1. GUARDRAIL REGRESSION TEST — it exits 2 unless every calling-codex rule is honored:
+#      explicit model_reasoning_effort, approval_policy="never", stdin redirected, sandbox via
+#      -s on plain exec but via -c sandbox_mode=... on resume (resume rejects -s like the real
+#      CLI), no -o on review.
+#   2. SCRIPTED IMPLEMENTER — it "implements" by writing files named in the prompt via lines of
+#      the form `<path> => <content>` (the toy plan embeds these), emits a fake --json
+#      thread.started event, and writes a conductor report to the -o file.
+#
+# Failure injection:
+#   MOCK_CODEX_FAIL="<unit>:<n>"   the n-th exec call for <unit> writes WRONG-<n> content
+#                                  (a later resume/fresh call writes the correct content)
+#   MOCK_CODEX_MODE=auth-fail      print an auth error to stderr, exit 1 (maps to unavailable)
+#   MOCK_CODEX_MODE=timeout        exit 124 (maps to timeout)
+#   MOCK_CODEX_MODE=die            exit 1 with no edits (maps to unavailable)
+#   MOCK_CODEX_STATE=<dir>         state directory (default: $TMPDIR/mock-codex-state)
+
+set -u
+STATE_DIR="${MOCK_CODEX_STATE:-${TMPDIR:-/tmp}/mock-codex-state}"
+mkdir -p "$STATE_DIR"
+
+fail() { echo "mock-codex GUARDRAIL VIOLATION: $*" >&2; exit 2; }
+
+sub="${1:-}"
+case "$sub" in
+  --version) echo "mock-codex 0.143.0"; exit 0 ;;
+  login)     exit 0 ;;                       # `codex login status`
+  review)    shift ;;
+  exec)      shift ;;
+  *)         fail "unknown subcommand: ${sub:-<none>}" ;;
+esac
+
+# ---- review ----
+if [ "$sub" = "review" ]; then
+  effort=""; approval=""
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      -o|--output) echo "error: unexpected argument '-o' found" >&2; echo "Usage: codex review ..." >&2; exit 2 ;;
+      -c|--config)
+        case "${2:-}" in
+          model_reasoning_effort=*) effort="${2#*=}" ;;
+          approval_policy=*) approval="${2#*=}" ;;
+        esac; shift 2 ;;
+      --base|--uncommitted) shift ;;
+      *) shift ;;
+    esac
+  done
+  [ -n "$effort" ]   || fail "review without explicit model_reasoning_effort"
+  case "$approval" in *never*) : ;; *) fail "review without approval_policy=never" ;; esac
+  echo "mock codex review: no findings."
+  exit 0
+fi
+
+# ---- exec (plain or resume) ----
+is_resume=0; session=""
+if [ "${1:-}" = "resume" ]; then
+  is_resume=1; shift
+  case "${1:-}" in -*|"") : ;; *) session="$1"; shift ;; esac
+fi
+
+sandbox=""; sandbox_cfg=""; effort=""; approval=""; json=0; out=""
+while [ $# -gt 0 ]; do
+  case "$1" in
+    -s|--sandbox)
+      [ "$is_resume" -eq 1 ] && { echo "error: unexpected argument '-s' found" >&2; echo "Usage: codex exec resume ..." >&2; exit 2; }
+      sandbox="${2:-}"; shift 2 ;;
+    -c|--config)
+      case "${2:-}" in
+        model_reasoning_effort=*) effort="${2#*=}" ;;
+        approval_policy=*)        approval="${2#*=}" ;;
+        sandbox_mode=*)           sandbox_cfg="${2#*=}" ;;
+      esac; shift 2 ;;
+    --json) json=1; shift ;;
+    -o|--output-last-message) out="${2:-}"; shift 2 ;;
+    -m|--model) shift 2 ;;
+    --skip-git-repo-check|--ephemeral|-) shift ;;
+    *) shift ;;
+  esac
+done
+
+[ -t 0 ] && fail "stdin is a TTY — prompt must be delivered via stdin redirect"
+[ -n "$effort" ]   || fail "exec without explicit model_reasoning_effort"
+case "$approval" in *never*) : ;; *) fail "exec without approval_policy=never" ;; esac
+if [ "$is_resume" -eq 1 ]; then
+  case "$sandbox_cfg" in *workspace-write*) : ;; *) fail "resume without -c sandbox_mode=workspace-write" ;; esac
+else
+  case "$sandbox" in workspace-write|read-only) : ;; *) fail "exec without -s workspace-write|read-only (got: '$sandbox')" ;; esac
+fi
+
+prompt="$(cat)"
+
+case "${MOCK_CODEX_MODE:-}" in
+  auth-fail) echo "401 unauthorized: usage limit reached, run codex login" >&2; exit 1 ;;
+  timeout)   exit 124 ;;
+  die)       echo "mock codex: internal error" >&2; exit 1 ;;
+esac
+
+# Read-only plan review: no edits, emit a verdict.
+if [ "$is_resume" -eq 0 ] && [ "$sandbox" = "read-only" ]; then
+  [ "$json" -eq 1 ] && echo '{"type":"thread.started","session_id":"mock-review-session"}'
+  [ -n "$out" ] && printf 'Plan looks implementable.\nVERDICT: APPROVED\n' > "$out"
+  exit 0
+fi
+
+# Identify the unit and count this call.
+unit="$(printf '%s\n' "$prompt" | sed -n 's/^UNIT: \([A-Za-z0-9_-]*\).*/\1/p' | head -1)"
+[ -z "$unit" ] && [ -n "$session" ] && unit="$(printf '%s' "$session" | sed -n 's/^mock-\([A-Za-z0-9_-]*\)-session$/\1/p')"
+[ -z "$unit" ] && unit="unknown"
+count_file="$STATE_DIR/count-$unit"
+count=$(( $(cat "$count_file" 2>/dev/null || echo 0) + 1 ))
+echo "$count" > "$count_file"
+
+# Collect edit targets from `<path> => <content>` lines; remember them for resume calls.
+targets_file="$STATE_DIR/targets-$unit"
+printf '%s\n' "$prompt" | sed -n 's/^ *\([^ ]*\) => \(.*\)$/\1 => \2/p' > "$targets_file.new"
+if [ -s "$targets_file.new" ]; then mv "$targets_file.new" "$targets_file"; else rm -f "$targets_file.new"; fi
+
+wrong=0
+case "${MOCK_CODEX_FAIL:-}" in "$unit:$count") wrong=1 ;; esac
+
+changes=""
+if [ -f "$targets_file" ]; then
+  while IFS= read -r line; do
+    path="${line%% => *}"; content="${line#* => }"
+    mkdir -p "$(dirname "$path")" 2>/dev/null || true
+    if [ "$wrong" -eq 1 ]; then printf 'WRONG-%s\n' "$count" > "$path"; else printf '%s\n' "$content" > "$path"; fi
+    changes="${changes}- ${path} — written by mock-codex (call ${count})\n"
+  done < "$targets_file"
+fi
+
+[ "$json" -eq 1 ] && printf '{"type":"thread.started","session_id":"mock-%s-session"}\n' "$unit"
+if [ -n "$out" ]; then
+  {
+    printf 'STATUS: complete\n'
+    printf 'OBJECTIVE: mock implementation of unit %s\n' "$unit"
+    printf 'CHANGES:\n'
+    if [ -n "$changes" ]; then printf '%b' "$changes"; else printf '- (no targets found in prompt)\n'; fi
+    printf 'GAPS:\nnone\n'
+  } > "$out"
+fi
+exit 0
