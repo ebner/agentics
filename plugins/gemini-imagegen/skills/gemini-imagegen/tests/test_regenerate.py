@@ -322,6 +322,25 @@ class TestPlanRegeneration:
         captured = capsys.readouterr()
         assert "Warning" in captured.err
 
+    def test_fallback_model_is_ga_flash(self, tmp_path):
+        """Sidecar with no model field falls back to the GA flash ID."""
+        prompt_path = _make_prompt_path(tmp_path)
+        metadata = {"format": "png", "final_prompt": "A cat"}
+        plan = plan_regeneration(metadata, prompt_path, raster_model=None, svg_model=None)
+        assert plan["model"] == "gemini-3.1-flash-image"
+
+    def test_sidecar_recorded_legacy_model_wins_over_fallback(self, tmp_path):
+        """A recorded preview-era model is kept verbatim (no silent upgrade)."""
+        prompt_path = _make_prompt_path(tmp_path)
+        metadata = {
+            "format": "png",
+            "final_prompt": "A cat",
+            "model": "gemini-3.1-flash-image-preview",
+        }
+        plan = plan_regeneration(metadata, prompt_path, raster_model=None, svg_model=None)
+        assert plan["model"] == "gemini-3.1-flash-image-preview"
+        assert plan["model_changed"] is False
+
     def test_reference_clears_opposing_field(self, tmp_path):
         """When a single reference overrides to edit, source_images should be None."""
         ref = tmp_path / "ref.png"

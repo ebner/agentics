@@ -10,7 +10,8 @@ Examples:
     python compose_images.py "Combine into collage" result.png --format png --transparent img1.png img2.png
     python compose_images.py "Apply style from first to second" styled.png style.png photo.png
 
-Note: Supports up to 14 reference images (Gemini 3 Pro only).
+Note: Supports up to 14 reference images. Use --model gemini-3-pro-image
+when people must stay recognizable.
 
 Environment:
     GEMINI_API_KEY - Required API key
@@ -27,6 +28,12 @@ from google import genai
 from google.genai import types
 
 from generate_image import make_transparent
+from models import (
+    DEFAULT_MODEL,
+    RASTER_MODEL_CHOICES,
+    default_size_for_model,
+    extract_text_and_image,
+)
 
 
 def write_compose_prompt_sidecar(
@@ -101,7 +108,7 @@ def compose_images(
     instruction: str,
     output_path: str,
     image_paths: list[str],
-    model: str = "gemini-3.1-flash-image-preview",
+    model: str = DEFAULT_MODEL,
     aspect_ratio: str | None = None,
     image_size: str | None = None,
     output_format: str = "jpg",
@@ -139,6 +146,9 @@ def compose_images(
             f"Transparency requires PNG format, but got '{output_format}'. "
             "Use --format png with --transparent."
         )
+
+    # Pro defaults to 2K when no explicit size was given (same cost as 1K)
+    image_size = default_size_for_model(model, image_size)
 
     api_key = os.environ.get("GEMINI_API_KEY")
     if not api_key:
@@ -183,14 +193,7 @@ def compose_images(
         config=config,
     )
 
-    text_response = None
-    image = None
-
-    for part in response.parts:
-        if part.text is not None:
-            text_response = part.text
-        elif part.inline_data is not None:
-            image = part.as_image()
+    text_response, image = extract_text_and_image(response.parts)
 
     if image is None:
         raise RuntimeError("No image was generated.")
@@ -255,9 +258,9 @@ def main():
     parser.add_argument(
         "--model",
         "-m",
-        default="gemini-3.1-flash-image-preview",
-        choices=["gemini-2.5-flash-image", "gemini-3.1-flash-image-preview"],
-        help="Model to use (pro recommended for composition)",
+        default=DEFAULT_MODEL,
+        choices=RASTER_MODEL_CHOICES,
+        help="Model to use (gemini-3-pro-image recommended for person/identity composition)",
     )
     parser.add_argument(
         "--aspect",
@@ -269,7 +272,7 @@ def main():
         "--size",
         "-s",
         choices=["1K", "2K", "4K"],
-        help="Output resolution",
+        help="Output resolution (default: 1K; pro model defaults to 2K)",
     )
     parser.add_argument(
         "--format",

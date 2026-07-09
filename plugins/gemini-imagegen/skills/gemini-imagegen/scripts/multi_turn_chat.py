@@ -31,13 +31,20 @@ from PIL import Image
 from google import genai
 from google.genai import types
 
+from models import (
+    DEFAULT_MODEL,
+    RASTER_MODEL_CHOICES,
+    default_size_for_model,
+    extract_text_and_image,
+)
+
 
 class ImageChat:
     """Interactive chat session for image generation and refinement."""
     
     def __init__(
         self,
-        model: str = "gemini-3.1-flash-image-preview",
+        model: str = DEFAULT_MODEL,
         output_dir: str = ".",
     ):
         api_key = os.environ.get("GEMINI_API_KEY")
@@ -57,12 +64,14 @@ class ImageChat:
     
     def _init_chat(self):
         """Initialize or reset the chat session."""
-        config = types.GenerateContentConfig(
-            response_modalities=["TEXT", "IMAGE"]
-        )
+        config_kwargs = {"response_modalities": ["TEXT", "IMAGE"]}
+        # Pro defaults to 2K (same cost as 1K); no --size flag in chat mode
+        size = default_size_for_model(self.model, None)
+        if size:
+            config_kwargs["image_config"] = types.ImageConfig(image_size=size)
         self.chat = self.client.chats.create(
             model=self.model,
-            config=config,
+            config=types.GenerateContentConfig(**config_kwargs),
         )
         self.current_image = None
     
@@ -79,16 +88,10 @@ class ImageChat:
         
         response = self.chat.send_message(contents)
         
-        text_response = None
-        image_response = None
-        
-        for part in response.parts:
-            if part.text is not None:
-                text_response = part.text
-            elif part.inline_data is not None:
-                image_response = part.as_image()
-                self.current_image = image_response
-        
+        text_response, image_response = extract_text_and_image(response.parts)
+        if image_response is not None:
+            self.current_image = image_response
+
         return text_response, image_response
     
     def save_image(self, filename: str | None = None) -> str | None:
@@ -120,8 +123,8 @@ def main():
     )
     parser.add_argument(
         "--model", "-m",
-        default="gemini-3.1-flash-image-preview",
-        choices=["gemini-2.5-flash-image", "gemini-3.1-flash-image-preview"],
+        default=DEFAULT_MODEL,
+        choices=RASTER_MODEL_CHOICES,
         help="Model to use"
     )
     parser.add_argument(

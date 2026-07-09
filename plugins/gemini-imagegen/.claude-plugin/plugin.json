@@ -1,11 +1,11 @@
 {
   "name": "gemini-imagegen",
-  "version": "1.5.0",
-  "description": "Image generation and editing using Google Gemini API — text-to-image, SVG, multi-turn refinement, transparency, and prompt sidecar files",
+  "version": "1.6.0",
+  "description": "Image generation and editing using Google Gemini API — text-to-image, SVG, multi-turn refinement, transparency, prompt sidecar files, and Nano Banana Pro identity/face preservation",
   "author": {
     "name": "Hannes Ebner"
   },
   "repository": "https://github.com/ebner/agentics",
   "license": "MIT",
-  "keywords": ["image-generation", "gemini", "svg", "illustration", "ai-art"]
+  "keywords": ["image-generation", "gemini", "svg", "illustration", "ai-art", "face-consistency"]
 }

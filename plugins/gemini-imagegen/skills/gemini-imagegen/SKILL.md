@@ -1,26 +1,48 @@
 ---
 name: gemini-imagegen
-description: This skill should be used when generating and editing images using the Gemini API (Nano Banana 2). It applies when creating images from text prompts, editing existing images, applying style transfers, generating logos with text, creating stickers, product mockups, or any image generation/manipulation task. Supports text-to-image, image editing, multi-turn refinement, and composition from multiple reference images.
+description: This skill should be used when generating and editing images using the Gemini API (Nano Banana 2 and Nano Banana Pro). It applies when creating images from text prompts, editing existing images, applying style transfers, generating logos with text, creating stickers, product mockups, style-transferring photos of people while keeping them recognizable (identity/face preservation), keeping a character consistent across images, or any image generation/manipulation task. Supports text-to-image, image editing, multi-turn refinement, and composition from multiple reference images.
 allowed-tools: Read, Write, Glob, Grep, Task, Bash(find:*gemini-imagegen*), Bash(bash:*gemini-imagegen/scripts/run.sh*)
 ---
 
-# Gemini Image Generation (Nano Banana 2)
+# Gemini Image Generation (Nano Banana 2 & Pro)
 
 Generate and edit images using Google's Gemini API. The environment variable `GEMINI_API_KEY` must be set.
 
-## Default Model
+## Model Selection
 
-| Model | Resolution | Best For |
-|-------|------------|----------|
-| `gemini-3.1-flash-image-preview` | 1K-4K | All image generation (default) |
+| Model | Alias | Resolution | Use For |
+|-------|-------|------------|---------|
+| `gemini-3.1-flash-image` | Nano Banana 2 | 1K-4K (default 1K) | Default for all generation and editing |
+| `gemini-3-pro-image` | Nano Banana Pro | 1K-4K (default 2K) | Identity/face preservation, character consistency |
 
-**Note:** Always use this model (Nano Banana 2). Only use a different model if explicitly requested.
+Legacy IDs `gemini-3.1-flash-image-preview`, `gemini-3-pro-image-preview`, and
+`gemini-2.5-flash-image` remain accepted by all scripts (so old `.prompt`
+sidecars regenerate) but must not be used for new images.
+
+### Model decision rules
+
+Add `--model gemini-3-pro-image` if AND ONLY IF at least one of these holds:
+
+1. The request includes one or more reference photos of a real person or pet
+   AND the output must keep that subject recognizable (examples: "make a
+   Ghibli-style image of this photo of me", portrait restyles, placing a
+   person into a new scene or outfit).
+2. The same character or subject must stay visually consistent across two or
+   more generated images.
+3. The user explicitly asks for "pro", "Nano Banana Pro", "high fidelity", or
+   "best quality".
+
+In every other case use the default `gemini-3.1-flash-image`. Do not switch to
+Pro because a task merely seems difficult or detailed.
+
+When Pro is selected without an explicit `--size`, the scripts automatically
+request 2K (Pro costs the same at 1K and 2K). An explicit `--size` always wins.
 
 ## Quick Reference
 
 ### Default Settings
-- **Model:** `gemini-3.1-flash-image-preview`
-- **Resolution:** 1K (default, options: 1K, 2K, 4K)
+- **Model:** `gemini-3.1-flash-image` (Nano Banana 2); `gemini-3-pro-image` per the Model decision rules
+- **Resolution:** 1K default (2K default when the pro model is selected; options: 1K, 2K, 4K)
 - **Aspect Ratio:** 1:1 (default)
 - **Format:** jpg (default, options: png, jpg, webp)
 - **Transparency:** disabled (use `--transparent` to enable)
@@ -62,8 +84,9 @@ bash "$RUN_SH" generate_image.py "A teal lock icon" output.jpg
 # With aspect ratio and resolution
 bash "$RUN_SH" generate_image.py "A wide landscape" wide.jpg --aspect 16:9 --size 2K
 
-# Use model explicitly
-bash "$RUN_SH" generate_image.py "A detailed logo" logo.jpg --model gemini-3.1-flash-image-preview
+# Identity-preserving restyle of a person (Model decision rule 1)
+bash "$RUN_SH" edit_image.py me.jpg "Ghibli-style illustration, keep me recognizable" me-ghibli.png \
+    --model gemini-3-pro-image --format png
 ```
 
 ### PNG with Transparency
@@ -96,6 +119,51 @@ bash "$RUN_SH" edit_image.py input.jpg "Add a sunset" output.png \
 bash "$RUN_SH" compose_images.py "Combine into a collage" output.jpg image1.jpg image2.jpg
 ```
 
+### Subject & Face Consistency (Nano Banana Pro)
+
+Use these recipes whenever Model decision rule 1 or 2 applies. Script choice:
+`edit_image.py` for a single photo restyle; `compose_images.py` when there are
+two or more reference photos (of one person or several people).
+
+**Recipe 1: Single-photo restyle (keep the person recognizable)**
+
+```bash
+bash "$RUN_SH" edit_image.py photo.jpg \
+    "Restyle this photo as a Studio Ghibli-style illustration. Preserve the person's facial features, face shape, hairstyle, skin tone, and expression exactly so they remain clearly recognizable. Keep the original pose and composition; only change the artistic style." \
+    ghibli.png --model gemini-3-pro-image --format png
+```
+
+**Recipe 2: Multiple reference photos of the same person** (two to five photos
+from different angles improve likeness)
+
+```bash
+bash "$RUN_SH" compose_images.py \
+    "Using these photos of the same person as identity references, generate a portrait of them as a 1920s film-noir detective in a rainy street. Their face must match the reference photos exactly - do not alter facial identity, age, or skin tone." \
+    noir.jpg front.jpg profile.jpg smiling.jpg --model gemini-3-pro-image
+```
+
+**Recipe 3: Group photo from individual photos**
+
+```bash
+bash "$RUN_SH" compose_images.py \
+    "Create one group photo of these three people standing together in a sunlit office, natural candid poses. Each person must keep the exact face, hairstyle, and skin tone from their reference photo." \
+    team.jpg person1.jpg person2.jpg person3.jpg --model gemini-3-pro-image --aspect 16:9
+```
+
+**Identity-preservation prompt patterns.** Every identity-preserving prompt
+must contain all three of:
+
+1. An explicit preservation clause: "Preserve the person's facial features,
+   face shape, and expression exactly" or "must remain clearly recognizable
+   as in the reference photo".
+2. A negative clause: "Do not alter facial identity, age, or skin tone."
+3. A scope split: name what MAY change (style, background, clothing,
+   lighting) and what MUST NOT change (face, identity, body proportions).
+
+**Resolution:** Pro defaults to 2K automatically when `--size` is omitted
+(more facial detail, same cost as 1K). Use `--size 4K` only for print-scale
+output.
+
 ### Multi-Turn Refinement
 
 ```bash
@@ -127,7 +195,7 @@ bash "$RUN_SH" regenerate.py ./frontend/public/images/illustrations/ -r --execut
 
 # Regenerate with a new raster model (model upgrade scenario)
 bash "$RUN_SH" regenerate.py ./frontend/public/images/illustrations/ -r --execute \
-    --raster-model gemini-3.1-flash-image-preview
+    --raster-model gemini-3.1-flash-image
 
 # Override SVG model
 bash "$RUN_SH" regenerate.py ./assets/ -r --execute \
@@ -208,7 +276,7 @@ The `.prompt` file is created alongside the image:
 
 ```yaml
 ---
-model: gemini-3.1-flash-image-preview
+model: gemini-3.1-flash-image
 aspect_ratio: "1:1"
 resolution: 1K
 format: png
@@ -255,154 +323,24 @@ bash "$RUN_SH" generate_image.py \
 
 ## Output Format Options
 
-### JPG (default)
-- Best for photos and realistic images
-- Smaller file size
-- No transparency support
-- Use `.jpg` extension
-
-### PNG
-- Best for illustrations and graphics
-- Supports transparency (with `--transparent`)
-- Lossless compression
-- Larger file size
-- Required when using `--transparent`
-
-### WebP
-- Best compression with good quality
-- Supports transparency
-- Modern format, good browser support
-- Use `.webp` extension
-
-### Format Selection
+| Format | Best For | Transparency | Notes |
+|--------|----------|--------------|-------|
+| `jpg` (default) | Photos, realistic images | No | Smallest files |
+| `png` | Illustrations, graphics | Yes (required for `--transparent`) | Lossless, larger files |
+| `webp` | Web assets | Yes | Best compression |
 
 ```bash
-# JPG (default)
-bash "$RUN_SH" generate_image.py "prompt" output.jpg
-
-# PNG (required for transparency)
-bash "$RUN_SH" generate_image.py "prompt" output.png --format png
-
-# PNG with transparency
 bash "$RUN_SH" generate_image.py "prompt" output.png --format png --transparent
-
-# WebP
-bash "$RUN_SH" generate_image.py "prompt" output.webp --format webp
 ```
 
-## Core API Pattern
+## Direct API Patterns (fallback only)
 
-```python
-import os
-from google import genai
-from google.genai import types
-
-client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
-
-# Basic generation (1K, 1:1 - defaults)
-response = client.models.generate_content(
-    model="gemini-3.1-flash-image-preview",
-    contents=["Your prompt here"],
-    config=types.GenerateContentConfig(
-        response_modalities=['TEXT', 'IMAGE'],
-    ),
-)
-
-for part in response.parts:
-    if part.text:
-        print(part.text)
-    elif part.inline_data:
-        image = part.as_image()
-        image.save("output.jpg")
-```
-
-## Custom Resolution & Aspect Ratio
-
-```python
-from google.genai import types
-
-response = client.models.generate_content(
-    model="gemini-3.1-flash-image-preview",
-    contents=[prompt],
-    config=types.GenerateContentConfig(
-        response_modalities=['TEXT', 'IMAGE'],
-        image_config=types.ImageConfig(
-            aspect_ratio="16:9",  # Wide format
-            image_size="2K"       # Higher resolution
-        ),
-    )
-)
-```
-
-## Editing Images
-
-Pass existing images with text prompts:
-
-```python
-from PIL import Image
-
-img = Image.open("input.png")
-response = client.models.generate_content(
-    model="gemini-3.1-flash-image-preview",
-    contents=["Add a sunset to this scene", img],
-    config=types.GenerateContentConfig(
-        response_modalities=['TEXT', 'IMAGE'],
-    ),
-)
-```
-
-## Multi-Turn Refinement
-
-Use chat for iterative editing:
-
-```python
-from google.genai import types
-
-chat = client.chats.create(
-    model="gemini-3.1-flash-image-preview",
-    config=types.GenerateContentConfig(response_modalities=['TEXT', 'IMAGE'])
-)
-
-response = chat.send_message("Create a logo for 'Acme Corp'")
-# Save first image...
-
-response = chat.send_message("Make the text bolder and add a blue gradient")
-# Save refined image...
-```
-
-## Advanced Features
-
-### Google Search Grounding
-Generate images based on real-time data:
-
-```python
-response = client.models.generate_content(
-    model="gemini-3.1-flash-image-preview",
-    contents=["Visualize today's weather in Tokyo as an infographic"],
-    config=types.GenerateContentConfig(
-        response_modalities=['TEXT', 'IMAGE'],
-        tools=[{"google_search": {}}]
-    )
-)
-```
-
-### Multiple Reference Images (Up to 14)
-Combine elements from multiple sources:
-
-```python
-response = client.models.generate_content(
-    model="gemini-3.1-flash-image-preview",
-    contents=[
-        "Create a group photo of these people in an office",
-        Image.open("person1.png"),
-        Image.open("person2.png"),
-        Image.open("person3.png"),
-    ],
-    config=types.GenerateContentConfig(
-        response_modalities=['TEXT', 'IMAGE'],
-    ),
-)
-```
+Always prefer the CLI scripts above. If a task needs the google-genai SDK
+directly (Google Search grounding, custom pipelines), read
+`reference/api-patterns.md` in this skill directory for the API patterns:
+basic generation, resolution/aspect config, editing, multi-turn chat,
+search grounding, multi-reference composition, and how to skip `part.thought`
+parts when using `gemini-3-pro-image`.
 
 ## SVG Vector Generation (Gemini 3.1 Pro)
 
@@ -529,7 +467,7 @@ Then use `--format png --transparent` to convert white to transparent.
 - `--transparent` requires PNG format (will error with jpg/webp)
 - Image-only mode (`responseModalities: ["IMAGE"]`) won't work with Google Search grounding
 - For editing, describe changes conversationally—the model understands semantic masking
-- Default to 1K resolution for speed; use 2K/4K when quality is critical
+- Flash defaults to 1K for speed; Pro auto-defaults to 2K. Use `--size 4K` when print-scale quality is required
 
 ## Error Handling
 
@@ -550,3 +488,4 @@ If the script fails:
 5. For UI illustrations that need transparency, use `--format png --transparent --edge-tolerance 10`
 6. Always request white backgrounds in prompts when you need transparency
 7. Keep `.prompt` sidecar files alongside images for reproducibility
+8. When a real person must stay recognizable, follow the Model decision rules and the Subject & Face Consistency recipes (pro model + preservation clauses)

@@ -14,7 +14,7 @@ Usage:
     python regenerate.py path/to/image.prompt                    # Dry run (single file)
     python regenerate.py path/to/illustrations/ --recursive      # Dry run (batch)
     python regenerate.py path/to/illustrations/ -r --execute     # Regenerate all
-    python regenerate.py path/to/ -r --execute --raster-model gemini-3.1-flash-image-preview
+    python regenerate.py path/to/ -r --execute --raster-model gemini-3.1-flash-image
 
 Examples:
     # Preview what would be regenerated
@@ -22,7 +22,7 @@ Examples:
 
     # Regenerate all with a new model (raster only)
     python regenerate.py ./frontend/public/images/illustrations/ -r --execute \
-        --raster-model gemini-3.1-flash-image-preview
+        --raster-model gemini-3.1-flash-image
 
     # Filter by type: svg, raster, edit, or composition
     python regenerate.py ./assets/ -r --execute --filter svg
@@ -49,6 +49,7 @@ from generate_image import generate_image
 from generate_svg import generate_svg
 from edit_image import edit_image
 from compose_images import compose_images
+from models import DEFAULT_MODEL
 
 DISPATCH_LABELS = {"generate": "GEN", "edit": "EDIT", "compose": "COMP"}
 
@@ -199,7 +200,7 @@ def plan_regeneration(
     if is_svg:
         model = svg_model or original_model or "gemini-3.1-pro-preview"
     else:
-        model = raster_model or original_model or "gemini-3.1-flash-image-preview"
+        model = raster_model or original_model or DEFAULT_MODEL
 
     model_changed = model != original_model
 

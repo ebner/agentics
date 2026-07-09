@@ -1,6 +1,6 @@
 # Gemini Image Generation Plugin
 
-Image generation and editing using Google's Gemini API (Nano Banana 2).
+Image generation and editing using Google's Gemini API (Nano Banana 2, plus Nano Banana Pro for identity-preserving edits).
 
 ## Installation
 
@@ -19,6 +19,7 @@ Image generation and editing using Google's Gemini API (Nano Banana 2).
 
 - Text-to-image generation (1K, 2K, 4K resolution)
 - Image editing with natural language instructions
+- Identity/face-preserving style transfer and character consistency (Nano Banana Pro, auto-selected; defaults to 2K)
 - SVG vector generation
 - Multi-image composition
 - Multi-turn interactive refinement

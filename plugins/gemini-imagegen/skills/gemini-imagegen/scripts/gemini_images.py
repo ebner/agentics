@@ -26,19 +26,32 @@ from google.genai import types
 from generate_image import make_transparent, write_prompt_sidecar
 from edit_image import write_edit_prompt_sidecar, read_existing_prompt
 from compose_images import write_compose_prompt_sidecar
+from models import (
+    FLASH_MODEL,
+    PRO_MODEL,
+    default_size_for_model,
+    extract_text_and_image,
+)
 
 
 AspectRatio = Literal["1:1", "2:3", "3:2", "3:4", "4:3", "4:5", "5:4", "9:16", "16:9", "21:9"]
 ImageSize = Literal["1K", "2K", "4K"]
-Model = Literal["gemini-2.5-flash-image", "gemini-3.1-flash-image-preview"]
+Model = Literal[
+    "gemini-3.1-flash-image",
+    "gemini-3-pro-image",
+    "gemini-3.1-flash-image-preview",
+    "gemini-3-pro-image-preview",
+    "gemini-2.5-flash-image",
+]
 OutputFormat = Literal["png", "jpg", "webp"]
 
 
 class GeminiImageGenerator:
     """High-level interface for Gemini image generation."""
 
-    NANO_BANANA = "gemini-3.1-flash-image-preview"
-    FLASH = "gemini-2.5-flash-image"
+    NANO_BANANA = FLASH_MODEL          # Nano Banana 2 (default)
+    NANO_BANANA_PRO = PRO_MODEL        # Nano Banana Pro
+    FLASH = "gemini-2.5-flash-image"   # legacy
 
     def __init__(self, api_key: str | None = None, model: Model = NANO_BANANA):
         """Initialize the generator.
@@ -165,6 +178,8 @@ class GeminiImageGenerator:
 
         output = Path(output)
         used_model = model or self.model
+        # Pro defaults to 2K when no explicit size was given (same cost as 1K)
+        image_size = default_size_for_model(used_model, image_size)
         config = self._build_config(aspect_ratio, image_size, google_search)
 
         response = self.client.models.generate_content(
@@ -173,13 +188,7 @@ class GeminiImageGenerator:
             config=config,
         )
 
-        text = None
-        image = None
-        for part in response.parts:
-            if part.text:
-                text = part.text
-            elif part.inline_data:
-                image = part.as_image()
+        text, image = extract_text_and_image(response.parts)
 
         if image is None:
             raise RuntimeError("No image was generated. Check your prompt and try again.")
@@ -245,6 +254,8 @@ class GeminiImageGenerator:
 
         output = Path(output)
         used_model = model or self.model
+        # Pro defaults to 2K when no explicit size was given (same cost as 1K)
+        image_size = default_size_for_model(used_model, image_size)
         input_path_str = None
 
         if isinstance(input_image, (str, Path)):
@@ -264,13 +275,7 @@ class GeminiImageGenerator:
             config=config,
         )
 
-        text = None
-        image = None
-        for part in response.parts:
-            if part.text:
-                text = part.text
-            elif part.inline_data:
-                image = part.as_image()
+        text, image = extract_text_and_image(response.parts)
 
         if image is None:
             raise RuntimeError("No image was generated. Check your instruction and try again.")
@@ -335,7 +340,9 @@ class GeminiImageGenerator:
             )
 
         output = Path(output)
-        used_model = model or self.NANO_BANANA  # Nano Banana 2 recommended for composition
+        used_model = model or self.model
+        # Pro defaults to 2K when no explicit size was given (same cost as 1K)
+        image_size = default_size_for_model(used_model, image_size)
 
         # Load images and track paths
         loaded = []
@@ -357,13 +364,7 @@ class GeminiImageGenerator:
             config=config,
         )
 
-        text = None
-        image = None
-        for part in response.parts:
-            if part.text:
-                text = part.text
-            elif part.inline_data:
-                image = part.as_image()
+        text, image = extract_text_and_image(response.parts)
 
         if image is None:
             raise RuntimeError("No image was generated.")
@@ -397,11 +398,19 @@ class ImageChat:
     def __init__(self, client: genai.Client, model: Model):
         self.client = client
         self.model = model
-        self._chat = client.chats.create(
-            model=model,
-            config=types.GenerateContentConfig(response_modalities=["TEXT", "IMAGE"]),
-        )
+        self._chat = self._create_chat()
         self.current_image: Image.Image | None = None
+
+    def _create_chat(self):
+        """Create a chat session, applying the Pro 2K default."""
+        config_kwargs = {"response_modalities": ["TEXT", "IMAGE"]}
+        size = default_size_for_model(self.model, None)
+        if size:
+            config_kwargs["image_config"] = types.ImageConfig(image_size=size)
+        return self.client.chats.create(
+            model=self.model,
+            config=types.GenerateContentConfig(**config_kwargs),
+        )
 
     def send(
         self,
@@ -421,21 +430,13 @@ class ImageChat:
 
         response = self._chat.send_message(contents)
 
-        text = None
-        img = None
-        for part in response.parts:
-            if part.text:
-                text = part.text
-            elif part.inline_data:
-                img = part.as_image()
-                self.current_image = img
+        text, img = extract_text_and_image(response.parts)
+        if img is not None:
+            self.current_image = img
 
         return img, text
 
     def reset(self):
         """Reset the chat session."""
-        self._chat = self.client.chats.create(
-            model=self.model,
-            config=types.GenerateContentConfig(response_modalities=["TEXT", "IMAGE"]),
-        )
+        self._chat = self._create_chat()
         self.current_image = None

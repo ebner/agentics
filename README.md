@@ -32,7 +32,8 @@ with source credibility assessment.
 Image generation and editing using Google's Gemini API. Supports text-to-image,
 image editing, SVG vector generation, multi-image composition, multi-turn
 refinement, and automatic transparency conversion. Includes prompt sidecar
-metadata files for reproducibility.
+metadata files for reproducibility. Nano Banana Pro support adds
+identity-preserving style transfer and face-consistent composition.
 
 ### conductor
 
