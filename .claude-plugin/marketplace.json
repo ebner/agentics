@@ -8,7 +8,7 @@
       "name": "deep-research",
       "source": "./plugins/deep-research",
       "description": "Multi-phase web research with 15 domain-specific agent profiles, iterative deepening, anti-misinformation framework, and citation-backed reports",
-      "version": "1.5.0"
+      "version": "1.6.0"
     },
     {
       "name": "gemini-imagegen",
@@ -20,7 +20,7 @@
       "name": "conductor",
       "source": "./plugins/conductor",
       "description": "Plan big, execute small — the coordinating model plans, reviews, and runs every build/test/merge; a cheaper pluggable implementer (OpenAI Codex CLI or a Claude subagent) writes all the code",
-      "version": "1.0.0"
+      "version": "1.1.0"
     }
   ]
 }

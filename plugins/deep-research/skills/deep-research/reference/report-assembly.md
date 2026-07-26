@@ -68,6 +68,11 @@ encountered and rejected.]
 [repeat one `[N] Title — URL (...)` line per cited source]
 ```
 
+Every `[N]` in the Methodology block is a counted value, not an estimate: read the source, fetch,
+domain, and credibility totals from the deduplicated URL registry and the interim evidence files;
+read the wave count and termination reason from the saturation test that ended the run. If a number
+cannot be derived from a recorded artifact, write `not tracked` rather than a plausible figure.
+
 ## Sources JSON structure
 
 ```json
@@ -160,6 +165,18 @@ Sources in non-English languages: preserve the original title, note the language
 - **Acknowledge uncertainty** — "reportedly", "according to", "as of [date]"
 - **Match language** — write in the same language the user asked the question in
 - **Cross-references** — for reports with 8+ sections, cross-reference related sections (e.g., "See Section 3 for detailed risk analysis") to help readers navigate
+- **No padding** — every section earns its place with researched content. Do not add a section that
+  restates another, a summary of a summary, a "further considerations" section holding no findings,
+  or process narration outside Methodology. If a planned section has fewer than 3 supporting sources
+  (the per-section quality gate above), fold it into a related section or move the gap to Limitations
+  — do not write it thin to hit a structure count.
+- **Length comes from evidence** — the mode's word target is a budget for findings, not a quota to
+  fill. A well-sourced topic fills it; a thin one produces a shorter report and a fuller Limitations
+  section. Never stretch prose, restate a citation's content twice, or expand a caveat into a
+  section to reach the range.
+- **Readable over terse** — brevity comes from omitting detail that does not change what the reader
+  does next, never from compressing prose into fragments, invented abbreviations, or arrow chains.
+  Spell out the terms a reader who skipped the research would not know.
 
 ### Comparison table standards
 
@@ -202,6 +219,10 @@ chronological format:
 | standard  | 3,000-6,000 | 6-8      |
 | deep      | 6,000-12,000| 8-12     |
 | ultradeep | 12,000+     | 12-20    |
+
+These are budgets for researched content, not quotas. Coming in under the range with a well-sourced
+report and an honest Limitations section is correct; padding to reach the range is not. See the
+"No padding" and "Length comes from evidence" rules above.
 
 ### Auto-continuation for ultradeep
 

@@ -20,12 +20,28 @@ principles below govern how the criteria are written.
 4. **Anticipate the writer's shortcuts.** Include criteria for the known evasions: weakened or
    deleted tests, stubs presented as complete, silently narrowed scope, hardcoded fixtures.
 5. **Mandate the feedback format.** The reviewer's output is the fix loop's only signal: one-line
-   scoreboard, then exactly one bullet per failed criterion (what is wrong + what to do), then the
-   VERDICT line.
+   scoreboard, then one bullet per failed criterion (severity + confidence + what is wrong + what to
+   do), then the VERDICT line.
 6. **Give an explicit no-fire list.** Without one the reviewer thrashes on style nits and
    pre-existing issues. Standard no-fire items: style already accepted by the project's lint
    configuration; failures that pre-exist the change and are listed in the brief; suggestions to
    expand scope beyond the plan.
+7. **Filter by scope, never by severity.** The no-fire list is a *scope* filter — it names ground
+   the reviewer does not own. Never write a brief that tells the reviewer to report only important,
+   high-severity, or high-confidence findings: a reviewer instructed to be conservative investigates
+   just as hard, then withholds real defects it judged below the bar, so precision rises while
+   recall silently drops. Ask for every finding with a severity and a confidence label, and rank
+   them downstream yourself — at Stage 2 Decide for plan reviews, at Stage 4 step 5 for the final
+   review. This is why every brief below ends with a coverage instruction rather than an importance
+   threshold.
+8. **Every brief carries the verdict rule.** `conductor-reviewer` gets the rule from its own system
+   prompt, but `codex exec` and `codex review` see nothing except the brief text — so a brief that
+   states the output format without stating *when* to pick APPROVED over REVISE gets a cross-model
+   reviewer guessing the threshold, which burns Stage 2 rounds on low-severity findings. Restate the
+   rule verbatim in every brief: **REVISE if any reported finding — VIOLATED criterion, UNVERIFIABLE
+   criterion, or `ADDITIONAL:` bullet — is `severity: high` or `severity: medium`; APPROVED only when
+   every reported finding is `severity: low` or there are none.** The verdict is a function of the
+   labels alone, never of which channel a finding arrived through.
 
 ## 2. Plan-review brief A — completeness
 
@@ -50,8 +66,18 @@ Criteria:
 No-fire list: style preferences not encoded in the project's lint configuration; pre-existing
 issues in files the plan does not touch; scope expansion beyond the stated requirements.
 
-Output: one-line scoreboard; one bullet per failed criterion (what is wrong + what to do); final
-line exactly `VERDICT: APPROVED` or `VERDICT: REVISE`.
+Report every finding that is not on the no-fire list, including ones you are unsure about or judge
+minor — label each with a severity and a confidence instead of withholding it. Coverage is your job;
+ranking is mine.
+
+Output: one-line scoreboard; one bullet per failed criterion (severity, confidence, what is wrong,
+what to do); an `ADDITIONAL:` bullet, carrying the same severity and confidence fields, for any
+finding outside the criteria; final line exactly `VERDICT: APPROVED` or `VERDICT: REVISE`.
+
+Verdict rule: REVISE if any finding you report — VIOLATED criterion, UNVERIFIABLE criterion, or
+`ADDITIONAL:` bullet — is `severity: high` or `severity: medium`; APPROVED only when every finding
+you report is `severity: low`, or you report none. Label an UNVERIFIABLE criterion at the severity
+of the defect that would exist if it were violated, not at `low` because you could not check it.
 ```
 
 ## 3. Plan-review brief B — premise and decomposition
@@ -72,12 +98,24 @@ Criteria:
    hide a shared dependency that forces an ordering the plan does not declare.
 4. Dependency graph — are the declared dependsOn relations correct and complete?
 5. Unit sizing — no unit below the worthiness floor (under 20 changed lines in at most 2 files
-   with no new test files); flag undersized units for merging.
+   with no new test files); flag undersized units for merging. Also check the ceiling: at most 20
+   units in the plan and at most 12 in any one dependency wave; flag an over-decomposed plan for
+   merging adjacent same-file units or splitting into separate runs.
 
 No-fire list: completeness gaps (brief A's ground); style; scope expansion.
 
-Output: one-line scoreboard; one bullet per failed criterion; final line exactly
-`VERDICT: APPROVED` or `VERDICT: REVISE`.
+Report every finding that is not on the no-fire list, including ones you are unsure about or judge
+minor — label each with a severity and a confidence instead of withholding it. Coverage is your job;
+ranking is mine.
+
+Output: one-line scoreboard; one bullet per failed criterion (severity, confidence, what is wrong,
+what to do); an `ADDITIONAL:` bullet, carrying the same severity and confidence fields, for any
+finding outside the criteria; final line exactly `VERDICT: APPROVED` or `VERDICT: REVISE`.
+
+Verdict rule: REVISE if any finding you report — VIOLATED criterion, UNVERIFIABLE criterion, or
+`ADDITIONAL:` bullet — is `severity: high` or `severity: medium`; APPROVED only when every finding
+you report is `severity: low`, or you report none. Label an UNVERIFIABLE criterion at the severity
+of the defect that would exist if it were violated, not at `low` because you could not check it.
 ```
 
 ## 4. Final-review brief
@@ -106,8 +144,19 @@ No-fire list: style already accepted by the project's lint configuration; failur
 the change (listed here: <pre-existing failures or "none">); improvement ideas beyond the plan's
 scope.
 
-Output: one-line scoreboard; one bullet per failed criterion; final line exactly
-`VERDICT: APPROVED` or `VERDICT: REVISE`.
+Report every finding that is not on the no-fire list, including ones you are unsure about or judge
+minor — label each with a severity and a confidence instead of withholding it. Coverage is your job;
+ranking is mine: a separate consolidation step sorts your findings into Must-fix / Should-fix /
+Optional, so a finding that gets filtered there costs far less than a real defect you dropped here.
+
+Output: one-line scoreboard; one bullet per failed criterion (severity, confidence, what is wrong,
+what to do); an `ADDITIONAL:` bullet, carrying the same severity and confidence fields, for any
+finding outside the criteria; final line exactly `VERDICT: APPROVED` or `VERDICT: REVISE`.
+
+Verdict rule: REVISE if any finding you report — VIOLATED criterion, UNVERIFIABLE criterion, or
+`ADDITIONAL:` bullet — is `severity: high` or `severity: medium`; APPROVED only when every finding
+you report is `severity: low`, or you report none. Label an UNVERIFIABLE criterion at the severity
+of the defect that would exist if it were violated, not at `low` because you could not check it.
 ```
 
 ## 5. Codex plan-review invocation note

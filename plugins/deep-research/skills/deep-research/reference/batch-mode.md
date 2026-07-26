@@ -69,6 +69,12 @@ After all individual topics are complete:
 [Holistic recommendations informed by the full set of research]
 ```
 
+Each individual topic report follows the writing rules and per-mode length targets in
+`report-assembly.md`. The synthesis file follows the same rules and adds one of its own: it carries
+only what emerges from reading the topics *together*. A section that merely restates a single
+report's findings does not belong here — link to that report instead. `[Total sources]` is the
+counted sum of the deduplicated per-topic registries, not an estimate.
+
 ### 5. Delivery
 Present to the user:
 - Path to each individual report

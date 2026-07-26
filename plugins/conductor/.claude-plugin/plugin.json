@@ -1,6 +1,6 @@
 {
   "name": "conductor",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Plan big, execute small — the coordinating model plans, reviews, and runs every build/test/merge; a cheaper pluggable implementer (OpenAI Codex CLI or a Claude subagent) writes all the code",
   "author": { "name": "Hannes Ebner" },
   "repository": "https://github.com/ebner/agentics",

@@ -92,6 +92,19 @@ Workflow:
 
 End the research session. No further action needed.
 
+## Appended-section quality
+
+Every `## Follow-up:`, `## Extension:`, and update section follows the writing rules in
+`report-assembly.md` — prose, inline citations, no padding, readable over terse. Two rules are
+specific to appended sections:
+
+- **Add findings, not bulk.** A follow-up section covers what the new sub-agents actually found. Do
+  not re-summarize the section it drills into, restate the executive summary, or recap the original
+  research; the reader already has the report open. If a round returns little, the section is short
+  and says what was not found.
+- **Keep the counts honest.** The "Updated [date]: added [N] newer sources" note and any revised
+  Methodology totals are counted from the updated sources JSON, not estimated from the round.
+
 ## Context management
 
 - Always re-read the report file from disk for each follow-up round (don't rely on

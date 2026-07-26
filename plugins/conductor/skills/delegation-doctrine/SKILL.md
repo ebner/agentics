@@ -6,8 +6,8 @@ description: >
   an implementer report, decide delegate-vs-keep, select an implementer backend, escalate a
   failing unit, or when the /conductor:implement command or the implement-fanout workflow runs.
   Covers the roles and role lock, the backend contract (codex and claude lanes), the spec and
-  report formats, verification ownership, the escalation ladder, sizing rules, and the review
-  doctrine.
+  report formats, verification ownership, the escalation ladder, sizing rules, the review
+  doctrine, and coordinator conduct (evidence-grounded claims, autonomy, reporting).
 allowed-tools:
   - Read
   - Bash
@@ -203,6 +203,15 @@ per the role-lock exception I am implementing <id> directly.
   not force-merge; the workflow merges overlapping units into one sequential unit before waving.
 - Linear units need not be file-disjoint, but each still needs its own FILES list and verification
   command(s).
+- **Unit ceiling = 20 per plan, and at most 12 units in any one dependency wave.** The floor above
+  stops over-decomposition of small work; this ceiling stops the opposite failure, where a large plan
+  fans out to dozens of concurrent implementer sessions. Each session is a separate paid context that
+  re-reads its files and re-establishes its own understanding, so a wave's cost and its conflict
+  surface both grow with its width, while the verify/merge gate stays serial per wave. Exceeding
+  either number means the decomposition is too fine: merge adjacent units in the same files, or split
+  the plan into runs. The workflow runner also caps live agents at `min(16, cores - 2)`, but that is a
+  machine-level backstop that queues the overflow — it is not a substitute for deciding the unit count
+  at plan time, and a plan that relies on it will simply run its extra units later, not cheaper.
 
 ## 10. Review doctrine
 
@@ -214,3 +223,40 @@ per the role-lock exception I am implementing <id> directly.
 - Every brief supplies checkable criteria, an explicit no-fire list, and the mandated output
   format. Read `reference/review-rubric.md` for the rubric principles and the brief templates
   before launching the first reviewer of a run.
+- Briefs filter by **scope, not severity**: the no-fire list names ground the reviewer does not own,
+  and the reviewer reports everything else with a severity and a confidence label. A brief that asks
+  for only high-severity or high-confidence findings gets a reviewer that investigates just as hard
+  and then withholds real defects — recall drops with no visible signal. Ranking happens downstream
+  in the coordinator, never in the reviewer: at Stage 2 Decide for plan reviews, at Stage 4 step 5 for
+  the final review (rubric principle 7).
+- **The verdict is a pure function of the severity labels**, and every brief restates the rule because
+  cross-model reviewers see only the brief (rubric principle 8): REVISE if any reported finding is
+  `severity: high` or `medium` through any channel, APPROVED only when every reported finding is
+  `severity: low`. Downstream gates therefore read the VERDICT line and the labels — never the finding
+  count, and never which channel a finding arrived through. Findings from sources whose format the
+  conductor does not control (`codex review`, the project's own review command) are labeled by the
+  coordinator before ranking, not discarded for lacking a label.
+
+## 11. Coordinator conduct
+
+The coordinator runs long, largely unattended, and its output is the user's only view of the run.
+Four rules follow from that:
+
+- **Claims come from artifacts, never recollection.** Every status the coordinator reports — a unit's
+  outcome, a gate result, a CHANGES list, a source count — is read from a recorded artifact: the
+  per-unit diff against its 3a snapshot, a command's exit status and captured output, the plan file.
+  §6 states this for implementer reports; it applies equally to what the coordinator tells the user.
+  Where a claim cannot be traced to an artifact, report it as unverified rather than asserting it.
+- **Decide routine matters; stop only at the enumerated forks.** The command's §Forks list is the
+  complete set of stopping points. Naming, formatting, which of two equivalent spec phrasings to use,
+  and how to word a constraint are the coordinator's own calls — make them and move on. Do not add a
+  confirmation step the fork list does not name.
+- **Correct only what changes the user's decisions.** On a long run the coordinator will revise its
+  own earlier reading of a failure or a plan item. State the correction in one sentence and continue;
+  no apology, no re-derivation of how the earlier reading arose, no running tally of past mistakes.
+  A revised belief that changes nothing for the user needs no announcement at all.
+- **The close-out report re-grounds the reader.** By Stage 4 the user has not been watching for many
+  minutes and does not share the working vocabulary the run built up. Lead with the outcome, then
+  what is needed from them. Spell out unit ids, file paths, and gate names rather than carrying over
+  shorthand. Keep it short by dropping detail that does not change the user's next action — not by
+  compressing prose into fragments or arrow chains.

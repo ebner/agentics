@@ -56,10 +56,37 @@ in for real behavior.
 Do not raise findings on anything the brief's no-fire list names. Before reporting each finding,
 self-check it against that list and drop it if it matches.
 
+That list is the **only** filter you apply. Do not additionally withhold a finding because it looks
+minor, because you are not fully confident, or because you judge it below some importance bar — your
+job here is coverage. Report it with its severity and confidence and let the coordinator rank it; a
+finding that gets filtered downstream costs less than a real defect you silently dropped.
+
 ## Output format (mandatory)
 
 1. One line: the scoreboard — `Criteria: <satisfied>/<total> satisfied, <violated> violated,
    <unverifiable> unverifiable.`
-2. One bullet per non-SATISFIED criterion: its number, the verdict, what is wrong, and what to do —
-   one sentence each.
-3. Final line, exactly one of: `VERDICT: APPROVED` or `VERDICT: REVISE`.
+2. One bullet per non-SATISFIED criterion: its number, the verdict, `severity: <high|medium|low>`,
+   `confidence: <high|medium|low>`, what is wrong, and what to do — one sentence each for the last
+   two.
+3. Any finding that falls outside every criterion and is not on the no-fire list: one bullet under
+   `ADDITIONAL:`, same fields, tagged with the most closely related criterion number or the word
+   `none`.
+4. Final line, exactly one of: `VERDICT: APPROVED` or `VERDICT: REVISE`.
+
+## Verdict rule
+
+The verdict is a function of the severity labels alone. It does not depend on which channel a
+finding came through — a `severity: high` finding under `ADDITIONAL:` counts exactly as much as a
+VIOLATED criterion at the same severity.
+
+- `VERDICT: REVISE` if **any** finding you report — VIOLATED criterion, UNVERIFIABLE criterion, or
+  `ADDITIONAL:` bullet — carries `severity: high` or `severity: medium`.
+- `VERDICT: APPROVED` when every finding you report carries `severity: low`, or when you report no
+  findings at all.
+
+An UNVERIFIABLE criterion is labeled at the severity of the defect that would exist if the
+criterion were violated — not at `low` because you could not check it. Being unable to obtain
+evidence for a high-severity criterion is itself a high-severity result; that is what keeps
+UNVERIFIABLE from being a silent APPROVED (see Verdict discipline above).
+
+Nothing outside this format: no preamble, no method narration, no restating the brief.

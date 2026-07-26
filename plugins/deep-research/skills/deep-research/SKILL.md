@@ -41,6 +41,21 @@ wrong — the web is the only source of truth.
 prompted for every web request, research cannot proceed efficiently. Ensure WebSearch
 and WebFetch are in the user's allowed permissions before starting.
 
+**Autonomy.** A run takes 5 to 60 minutes and the user is not watching it. These are the only
+points where you stop and ask, and every one of them uses AskUserQuestion:
+
+1. Mode selection (STEP 0)
+2. Clarifying questions (STEP 0.75) — plus at most one follow-up round
+3. Plan approval (STEP 2; standard/deep/ultradeep only — quick mode proceeds inline)
+4. Output location (STEP 7)
+5. The follow-up menu after delivery (STEP 9)
+
+Every other decision is yours: which sub-questions to write, how to phrase a query, which domain
+profile fits, whether a DISCOVERY warrants a new sub-question, whether to run another wave, which
+sources to trust, how to structure a section. Make those calls and continue. Do not pause between
+waves for permission, do not ask whether to keep researching, and do not offer the user a choice
+that one of the five gates above already covers.
+
 ## How to invoke
 
 ```
@@ -351,6 +366,14 @@ Coverage: [list sub-questions with HIGH/MEDIUM/LOW status].
 Gaps: [brief description]. Starting wave [N+1].
 ```
 
+**Every number in that update is counted, not estimated.** Derive `[X]`, `[Y]`, and `[Z]` by
+counting the deduplicated URL registry and the credibility labels on the returned Source Index
+lines. Derive each coverage status from the source count and credibility labels actually recorded
+for that sub-question in step 3. If a sub-agent returned no parseable Source Index, count it as
+zero sources and say so — never carry a source count, a coverage status, or a fetch total forward
+from memory or from what a wave was expected to produce. The same rule governs the Methodology
+section's counts in STEP 7: read them from the URL registry and the interim evidence files.
+
 ---
 
 ## STEP 5 — SATURATION TEST (decide: iterate or proceed)
@@ -434,7 +457,8 @@ Proposed: ./research-output/[topic-slug]_[YYYY-MM-DD].md
 ### Write the report
 
 Write the report in the **same language the user asked the question in**.
-Use `Bash("pwd")` to confirm the project root. Create the output directory if needed.
+Every path you report to the user is relative to the project root, and the output directory exists
+before you write into it — confirm both however you prefer.
 Source quotes and full per-source detail live in the interim evidence files under
 `./research-output/.interim-[topic-slug]/` — read them (Read tool) as you assemble each
 section so citations carry the exact numbers, dates, and quotes captured during retrieval.
@@ -445,6 +469,13 @@ Generate two files:
 
 Read `reference/report-assembly.md` for the report Markdown template, sources JSON schema,
 progressive generation strategy, citation style, quality rules, and domain-specific templates.
+
+**Length is set by the mode's target, not by how much you could write.** The per-mode word ranges in
+`reference/report-assembly.md` ("Report length targets by mode") are the budget; spend it on findings
+and evidence. A report reaches its target by covering more researched ground, never by padding —
+no filler sections, no section that restates another, no boilerplate, no recap of the research
+process outside the Methodology section. A thin evidence base produces a shorter report plus an
+honest Limitations section, not a longer one.
 
 ---
 
@@ -464,6 +495,15 @@ If validation fails, do targeted follow-up research to fill gaps.
    - Brief executive summary
    - File paths to report and sources (relative to project root)
    - Source count and credibility breakdown
+
+The inline delivery is short by design — the report is the deliverable and the user is about to open
+it. A run can take up to an hour, so write this for someone who has not been watching: open with the
+answer to their original question in one or two sentences, then the file paths, then the counts, then
+any caveat that should change how they read the report (a MISINFORMATION FLAG, a MISSING sub-question,
+a time-bounded or wave-bounded termination). Do not re-summarize the report section by section, do not
+narrate the waves, and do not repeat the executive summary in full — it is in the file. Every count
+here is read from the final URL registry and the Methodology block you just wrote — not from the
+last STEP 4 status update, which is stale if STEP 8 added follow-up research after it.
 
 ### Follow-up loop
 

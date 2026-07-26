@@ -29,6 +29,12 @@ CONSTRAINTS:
 - Do not commit, push, build, test, lint, install, or use the network. The coordinator verifies.
 - Never weaken, disable, or delete an existing test to get a green result.
 - Implement every OBJECTIVE item completely: no TODO, no stub, no placeholder.
+- Build the OBJECTIVE at the scope it states: no extra features, refactors, or abstractions, and no
+  error handling or fallbacks for conditions that cannot occur. A bug fix needs no surrounding
+  cleanup; a single call site needs no helper. Match the surrounding code's idiom and comment density.
+- If you think the OBJECTIVE is wrong or a better approach exists, implement it as specified and say
+  so in one GAPS line. Settle routine choices (a local name, a formatting detail, one of two
+  equivalent constructs) yourself — `blocked` is for a genuine requirement ambiguity only.
 
 VERIFICATION (the coordinator runs this — you do NOT):
 <the exact command(s) that will gate this unit>

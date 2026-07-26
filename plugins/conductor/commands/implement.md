@@ -16,11 +16,19 @@ plan first and pause for the user's approval of the plan).
 > follows the **`calling-codex` skill**; load it before the first codex call (only if the codex
 > lane is selected).
 >
-> **Autonomy:** run end-to-end. Do not ask "should I continue?" between stages — stop only at the
-> forks in §Forks. **Never auto-commit or push** — this applies to the user's branch and base; in
-> fanout mode the workflow's unit-branch commits and integration-branch merges are orchestration
-> mechanics on dedicated branches (base untouched, nothing ever pushed; gate agents act as
-> coordinator-tier delegates).
+> **Autonomy:** run end-to-end. Do not ask "should I continue?" between stages — **§Forks is the
+> complete list of stopping points**, so a decision not named there is yours to make: how to word a
+> spec, which of two equivalent phrasings to use, a naming or formatting choice, how to distribute
+> acceptance criteria across units. Make it and keep going; do not close a stage by offering the user
+> a next step the stage already covers. **Never auto-commit or push** —
+> this applies to the user's branch and base; in fanout mode the workflow's unit-branch commits and
+> integration-branch merges are orchestration mechanics on dedicated branches (base untouched,
+> nothing ever pushed; gate agents act as coordinator-tier delegates).
+>
+> **Conduct:** doctrine §11 governs how you report — every status claim is read from an artifact
+> (a diff, an exit status, the plan file) and never from recollection; corrections are one sentence
+> and only when they change the user's decisions; the Stage 4 report re-grounds a user who has not
+> been watching.
 
 ## Usage
 
@@ -106,9 +114,10 @@ Explore the codebase first: the project's conventions, the code the task touches
 utilities that should be reused instead of new code. Then write the plan to
 `~/.claude/plans/<branch-slug>.md` (branch name slugified, `/` → `-`; add a `-<topic-slug>`
 suffix if that file exists for an unrelated plan). Required structure: numbered units, each with
-Files / acceptance criteria / verification command(s) / dependencies. No unit below the
-worthiness floor (doctrine §9) — merge undersized units. Do not pause for approval yet — Stage 2
-reviews first, then pauses.
+Files / acceptance criteria / verification command(s) / dependencies. Stay inside doctrine §9's
+sizing band: no unit below the worthiness floor (merge undersized units), and no more than 20 units
+in the plan or 12 in any one dependency wave (merge adjacent same-file units, or split the work into
+separate runs). Do not pause for approval yet — Stage 2 reviews first, then pauses.
 
 ## Stage 2 — Plan review (≤ 3 rounds)
 
@@ -125,13 +134,21 @@ launching the first reviewer.
      codex brief covers completeness, so the premise check runs on every path).
 - **Codex unavailable** → launch two `conductor:conductor-reviewer` agents, one with brief A and
   one with brief B. One Agent call per reviewer, both Agent calls in the same assistant message.
-- **Decide.**
-  - Both clear (codex `APPROVED` where applicable, reviewers find nothing material) → Stage 3.
-  - Otherwise edit the plan file to address substantive findings, then re-review (codex may
-    `resume` with a "what changed" note, or run fresh). Cap 3 rounds. Mechanical completeness
-    gaps are auto-resolved without asking.
-  - **Genuine fork → stop + `AskUserQuestion`:** an ambiguous requirement a reviewer surfaces, or
-    a persistent `VERDICT: REVISE` after round 3.
+- **Decide.** Reviewers report every finding with a severity and a confidence label, and compute
+  their own VERDICT from those labels alone — REVISE if any reported finding is `severity: high` or
+  `medium` through any channel, APPROVED only when every reported finding is `severity: low` (rubric
+  principles 7 and 8). **Decide on the VERDICT line, never on the finding count**, which is expected
+  to exceed the number of things worth acting on. The two cases below are mutually exclusive and
+  cover every outcome, so there is no path where a finding both blocks and does not block:
+  - **Every reviewer returned `VERDICT: APPROVED`** (codex included where applicable) → Stage 3. By
+    the verdict rule this means nothing above `severity: low` was reported, so carry those low
+    findings into the plan file as notes and run no further review round.
+  - **Any reviewer returned `VERDICT: REVISE`** → edit the plan file to address every `severity: high`
+    and `severity: medium` finding that reviewer reported, counting `ADDITIONAL:` bullets exactly like
+    VIOLATED criteria at the same severity. Then re-review (codex may `resume` with a "what changed"
+    note, or run fresh). Cap 3 rounds. Mechanical completeness gaps are auto-resolved without asking.
+  - **Genuine fork → stop + `AskUserQuestion`:** an ambiguous requirement a reviewer surfaces, or any
+    reviewer still at `VERDICT: REVISE` when round 3 ends.
 - **Raw-task mode only — mandatory approval pause** after review passes: `AskUserQuestion`
   presenting the plan summary — *Approve* / *Revise* (free-text feedback → apply → one more
   review round → re-ask) / *Cancel*. Plan mode skips this pause (the plan was already approved;
@@ -247,11 +264,44 @@ Otherwise:
    - codex unavailable: the `conductor:conductor-reviewer` agent alone, with the stated caveat:
      "cross-model review is unavailable; a stateless different-context reviewer is the fallback."
    - Plus the project's own review command if it has one. Capture all outputs verbatim.
-4. **Close-out fix round (cap 1).** Combine the Must-fix findings and the accepted simplification
-   items into one spec and dispatch it to the primary implementer lane (3b/3c/3d semantics), then
-   re-run the fast gate. Anything still open goes into the report.
+4. **Close-out fix round (cap 1).**
+
+   First **normalize every finding to a severity label**, because only `conductor-reviewer` emits
+   them: `codex review` and the project's own review command have output formats this command does
+   not control. For each of their findings, assign `severity: high|medium|low` yourself using the
+   same bar the reviewer applies (high = wrong behavior, a failing or weakened test, a security or
+   data-loss risk, or a promised plan item missing; medium = a real defect with a bounded blast
+   radius; low = everything else that is still worth recording), and mark it `severity: <label>
+   (assigned)` so the report shows the label was yours. A finding from these sources is never dropped
+   for lacking a label.
+
+   Then route **by severity label only, never by channel or source** — a `severity: high` finding
+   reported under `ADDITIONAL:`, or one you labeled from `codex review`, is Must-fix exactly like a
+   VIOLATED criterion at that severity:
+   - **Must-fix → dispatched:** every `severity: high` finding from any reviewer and any channel.
+   - **`severity: medium`:** dispatch it in this round if it blocks a PR — it changes behavior the
+     plan promised, or a reviewer marked it `confidence: high`; otherwise it lands in step 5's
+     Should-fix.
+   - **`severity: low`:** never dispatched; lands in step 5's Should-fix or Optional.
+
+   Combine the dispatched findings with the accepted simplification items into one spec, send it to
+   the primary implementer lane (3b/3c/3d semantics), then re-run the fast gate. Anything still open
+   goes into the report.
 5. **Consolidate** findings into Must-fix / Should-fix / Optional with cross-reviewer
-   attribution, and end with a pre-PR recommendation.
+   attribution, and end with a pre-PR recommendation. Rank by the severity labels from step 4 —
+   including the ones you assigned there — rather than re-litigating whether a finding was worth
+   raising: `high` → Must-fix, `medium` → Must-fix if it was dispatched in step 4 and Should-fix
+   otherwise, `low` → Should-fix or Optional. A finding that step 4 dispatched and the fix round
+   resolved is reported as fixed, not dropped from the list.
+
+   **Write this report for someone who stopped watching.** It is their first look at the run: open
+   with the outcome in one or two sentences (what was built, whether the gate is green, what is
+   outstanding), then what you need from them, then the ranked findings. Spell out unit ids, file
+   paths, and gate command names instead of carrying over run shorthand. Cover every unit's final
+   state and every Must-fix finding; drop anything that does not change the user's next action — no
+   per-unit narration of attempts that eventually passed, no restating the plan, no recap of tool
+   calls they can read in the diff. Keep the prose in full sentences: brevity comes from omitting
+   detail, not from compressing what remains into fragments or arrow chains.
 
 Do not auto-commit or push — the user reviews the recommendation and commits.
 
