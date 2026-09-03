@@ -34,7 +34,7 @@ Example: "Kubernetes horizontal pod autoscaling", "k8s HPA", "container autoscal
 
 ### Pattern 4: Temporal targeting
 ```
-"[topic] 2025"                     → recent coverage
+"[topic] [current year]"           → recent coverage
 "[topic] latest release"           → newest version
 "[topic] roadmap future"           → forward-looking
 "[topic] changelog breaking"       → recent changes

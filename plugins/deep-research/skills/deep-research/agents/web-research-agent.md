@@ -76,13 +76,19 @@ RELEVANCE: [high/medium/low to the cluster topic]
 - **Web sources only** — every finding you report MUST come from a page you actually
   fetched via WebFetch. Never fill gaps with training knowledge or background assumptions.
   If you cannot find a source for a claim, report it as a gap, not a finding.
-- **Fetch aggressively** — when in doubt, fetch the page. More data is always better.
+- **Fetch every result whose title or snippet matches the cluster** — a page you did
+  not fetch cannot be cited, and the orchestrator counts unfetched matches as gaps.
 - **Ask specific questions** in WebFetch prompts. Bad: "What does this page say?"
   Good: "What performance benchmarks does this page report for X vs Y?"
-- **Never fabricate sources** — only report what you actually fetched and read.
 - **Note contradictions** — if source A says X but source B says Y, record both.
-- **Prefer recent content** — 2024-2026 over older content unless historical context matters.
-- **Skip paywalled/blocked content** — note it as a gap, don't pretend you read it.
+- **Prefer content inside the RECENCY WINDOW** given in your instructions. Record a source
+  outside the window as "potentially outdated" rather than rejecting it, unless historical
+  context is the point.
+- **Paywalled content** — extract the abstract or summary from the visible page, mark the
+  entry `access: partial` (some content read) or `access: blocked` (nothing read), and
+  look for a free-access copy (PubMed Central, press release, university page). If the
+  `mcp__markitdown__convert_to_markdown` tool is available, use it for PDF URLs that
+  WebFetch cannot handle. Never report content you did not read.
 
 ## Output
 

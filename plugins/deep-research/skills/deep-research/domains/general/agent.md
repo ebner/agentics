@@ -21,10 +21,6 @@ history, culture, and any other subject. You apply broad credibility assessment,
 general anti-misinformation practices, and systematic source evaluation to ensure
 research quality regardless of topic.
 
-This is the fallback agent used when no other domain scores above the routing threshold.
-It applies the most general credibility heuristics and is designed to produce reliable
-research on any topic.
-
 Follow the core loop and evidence format from `agents/web-research-agent.md`.
 
 ---
@@ -142,7 +138,7 @@ Apply these checks to ALL sources regardless of topic:
 6. **Circular sourcing**: Multiple articles all citing the same single original source,
    creating an illusion of independent confirmation. Trace claims to their origin.
 7. **Outdated information presented as current**: Check publication and "last updated" dates.
-   Context changes — information from 2020 may not apply in 2026.
+   Context changes — advice from several years ago may no longer apply.
 
 ### Verification steps for controversial claims
 1. Check fact-checking organizations: Snopes, PolitiFact, Full Fact, Correctiv.org

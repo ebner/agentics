@@ -175,9 +175,9 @@ you touch it; do not treat these as exempt in perpetuity.
 
 ### Verbosity and deliverable length
 
-Both models write more than Opus 4.7/4.8 — longer user-facing messages, more narration
-between tool calls, and longer files written to disk. Lowering `effort` does not reliably
-shorten visible output; instruct for it:
+Both models write long by default — long user-facing messages, narration between tool
+calls, and long files written to disk. Lowering `effort` does not reliably shorten
+visible output; instruct for it:
 
 - Any component that produces a user-facing report forbids padding — no filler sections, no
   redundant summaries, no boilerplate — and bounds its length. Prefer a numeric target where the
@@ -191,17 +191,15 @@ shorten visible output; instruct for it:
   reader does next, never by compressing prose into fragments, invented abbreviations, or
   arrow chains.
 
-### Do not instruct a model to verify its own work
+### Verification: name the check, do not nudge
 
-Opus 5 verifies without being asked. A "double-check your answer" or "re-verify before
-responding" instruction produces over-verification with no quality gain. This deliberately
-inverts the general prompting advice to add self-checks — the carve-out applies to this
-repo's instruction content.
-
-- Never add re-check or self-audit phrasing to a prompt.
-- Structural verification stays, because it is a harness feature rather than a prompt
-  nudge: a separate stateless reviewer, a real build/test gate run by a different role, or
-  a validation checklist evaluated against recorded evidence.
+Both models verify without being asked. A bare "double-check your answer" or "re-verify
+before responding" produces over-verification with no quality gain, so no prompt in this
+repo carries that phrasing. What stays, and is added where a component runs long, is
+verification with a named object: the command that gates a unit, the spec a result is
+checked against, or a separate fresh-context reviewer. That is a harness feature rather
+than a prompt nudge. An existing "check your work against X" instruction survives a
+retarget; do not delete one because it mentions verification.
 
 ### Scope discipline
 

@@ -6,10 +6,7 @@ description: >
   planning, legal research, and more. Use when the user says "deep research",
   "research thoroughly", "investigate", "comprehensive analysis", "batch research",
   "research these topics", or asks for a well-sourced report on a topic. Also
-  supports research profiles via "--profile" flag. Features 15 domain-specific agent
-  profiles, iterative deepening with saturation-based termination, multilingual
-  search, anti-misinformation framework, and fake review detection. Searches 10-500+
-  web sources depending on mode and topic complexity.
+  supports research profiles via "--profile" flag.
 allowed-tools:
   - WebSearch
   - WebFetch
@@ -29,13 +26,12 @@ research by spawning **domain-specialized parallel sub-agents** that make extens
 use of WebSearch and WebFetch. Quality comes from breadth, depth, and domain-appropriate
 source selection.
 
-**CRITICAL: Web-first research only.** Every factual claim, data point, and
-recommendation in the final report MUST be backed by sources retrieved via WebSearch
-and WebFetch during this session. Training knowledge may be used to plan queries,
-interpret results, and structure the report — but NEVER as a source of factual claims.
-If a claim cannot be verified through recent web sources, it must be either omitted or
-explicitly flagged as unverified. Assume training knowledge is outdated and potentially
-wrong — the web is the only source of truth.
+**Web-first research.** Every factual claim, data point, and recommendation in the final
+report is backed by a source retrieved via WebSearch or WebFetch during this session,
+because the report's value is that it reflects the current web, not a training snapshot.
+Use training knowledge to plan queries, interpret results, and structure the report, not
+as a source of claims. A claim that no fetched source supports is omitted or explicitly
+flagged as unverified.
 
 **This skill requires autonomous WebSearch and WebFetch permissions.** If the user is
 prompted for every web request, research cannot proceed efficiently. Ensure WebSearch
@@ -155,8 +151,8 @@ Define exactly what you are researching. Produce internally (do not show user):
    - A critical safety issue or controversy is discovered
    - The original question rests on a false premise
 
-**IMPORTANT**: Decompose broadly. Each sub-question should explore a genuinely
-different angle. Cap total sub-questions at 12.
+Decompose broadly: each sub-question explores a genuinely different angle, so the
+waves cover the topic instead of re-searching one facet. Cap total sub-questions at 12.
 
 ---
 
@@ -233,6 +229,8 @@ DOMAIN-SPECIFIC RULES ([domain] domain):
 [Special instructions from domain agent.md]
 
 SEARCH LANGUAGES: [from STEP 0.5]
+
+RECENCY WINDOW: [from the domain's reference.md temporal sensitivity section]
 
 TOPIC CLUSTER: [sub-question]
 SEARCH QUERIES: [list of 3-6 queries, including local-language queries]
@@ -314,15 +312,10 @@ outdated" rather than rejecting them.
 
 ### Paywalled content handling
 
-If a sub-agent encounters a paywalled source:
-1. Try to extract abstract/summary from the available page
-2. Mark as `access: partial` or `access: blocked` in evidence log
-3. Seek free-access alternatives (PubMed Central, press releases, university pages)
-4. If MarkItDown MCP is available (`mcp__markitdown__convert_to_markdown`), use it
-   as fallback for PDF URLs that WebFetch cannot handle
-5. If `FIRECRAWL_API_KEY` is set, the Firecrawl scrape fallback (see
-   `agents/web-research-agent.md` → Fetch fallback) can retrieve JS-rendered or
-   bot-blocked pages WebFetch fails on (it does not bypass hard login/paywalls)
+Workers handle paywalls per `agents/web-research-agent.md` (partial extraction,
+`access:` labels, free-access alternatives, MarkItDown for PDFs, Firecrawl for
+bot-blocked pages). Their `access: partial|blocked` labels feed the source
+accessibility report in STEP 6.
 
 ---
 
@@ -540,15 +533,14 @@ token consumption down across waves:
 
 ## Quality principles
 
-- **Breadth over speed** — more sources = better research. Never cut corners on fetching.
-- **Domain expertise** — apply the right credibility lens for each topic.
+- **Breadth over speed** — coverage comes from the number and diversity of fetched
+  sources; the mode minimums are floors, not targets.
 - **Primary sources first** — always prefer official docs, papers, and firsthand accounts.
 - **Quantify everything** — numbers, dates, versions, benchmarks > vague claims.
-- **Show disagreement** — contradictory sources are a feature, not a bug.
-- **Honest limitations** — clearly state what you couldn't find or verify.
-- **No hallucination** — every claim must trace to a fetched source. If unsure, say so.
-  Never use training knowledge as a substitute for web research. If a topic has no
-  recent web sources, report that as a finding rather than filling the gap from memory.
+- **Show disagreement** — report contradictory sources side by side with URLs; the
+  reader decides.
+- **Web-first** (see the opening rule) — a topic with no recent web sources is reported as
+  a finding, not filled from memory.
 - **Multilingual reach** — don't limit to English when local-language sources are more authoritative.
 - **Anti-misinformation** — actively identify and flag misinformation; never cite REJECT-tier sources.
 - **Fake review awareness** — detect and flag suspicious review patterns across all relevant domains.

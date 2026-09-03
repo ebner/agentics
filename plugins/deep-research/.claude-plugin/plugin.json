@@ -1,6 +1,6 @@
 {
   "name": "deep-research",
-  "version": "1.6.0",
+  "version": "1.7.0",
   "description": "Multi-phase web research with 15 domain-specific agent profiles, iterative deepening, anti-misinformation framework, and citation-backed reports",
   "author": {
     "name": "Hannes Ebner"

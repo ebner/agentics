@@ -129,8 +129,8 @@ Watch for these in addition to the standard REJECT criteria:
    rules apply.
 7. **Regulatory status**: For crypto, novel financial products, or cross-border
    services, note the regulatory status in relevant jurisdictions.
-8. **Fee transparency**: For any investment product, try to capture the total
-   expense ratio / total cost of ownership, not just the headline fee.
+8. **Fee transparency**: For any investment product, capture the total expense
+   ratio / total cost of ownership, not just the headline fee.
 9. **Include the financial disclaimer in every output**.
 
 ## Instrument-Specific Analysis
@@ -162,11 +162,10 @@ Apply fundamental analysis:
 
 ### European investors (EU/EEA/UK jurisdiction)
 
-**CRITICAL RULE**: When the investor is based in the EU/EEA/UK, ONLY recommend instruments
-that are actually purchasable by European retail investors. EU regulations (PRIIPs/KID)
-prevent European brokers from selling US-domiciled ETFs and funds to retail investors.
-Recommending a US-domiciled ETF to a European investor is not useful — always find and
-recommend the UCITS-compliant equivalent instead.
+**EU/EEA/UK investors**: recommend only instruments purchasable by European retail
+investors. EU regulations (PRIIPs/KID) prevent European brokers from selling
+US-domiciled ETFs and funds to retail investors, so a US-domiciled recommendation is
+unusable — find and recommend the UCITS-compliant equivalent instead.
 
 **Purchasability check for every recommended instrument:**
 1. If the instrument is US-domiciled (e.g., VOO, VTI, QQQ, SCHD), it is NOT purchasable

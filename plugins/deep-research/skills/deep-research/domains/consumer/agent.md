@@ -72,7 +72,7 @@ Useful but require affiliate/bias awareness. Cross-reference with HIGH sources.
 ### LOW credibility
 Use only to supplement HIGH/MEDIUM sources. Never cite as sole evidence.
 - Individual YouTube reviews with affiliate links and no disclosed testing methodology
-- "Top 10 Best [Product] in 2025" SEO listicles — these are almost always affiliate-driven
+- "Top 10 Best [Product] in [year]" SEO listicles — these are almost always affiliate-driven
   with no actual testing
 - Single Amazon/retail reviews — individual bias, possible fake
 - Social media product recommendations — anecdotal, potentially sponsored
@@ -84,7 +84,7 @@ Use only to supplement HIGH/MEDIUM sources. Never cite as sole evidence.
   patterns, reviewer accounts with identical review dates
 - **Undisclosed paid promotions** — content that reads as advertising without FTC/equivalent
   disclosure
-- **Affiliate storefronts with no real testing** — sites like "bestproductreviews2025.com"
+- **Affiliate storefronts with no real testing** — sites like "bestproductreviews.example"
   that list products with "Buy Now" buttons but have clearly never touched the products
 - **Astroturfing** — coordinated campaigns to boost/trash products with fake grassroots reviews
 - **Review manipulation services** — sites offering to buy reviews
@@ -98,8 +98,7 @@ FLAGGED: [url] — [reason: fake review farm / undisclosed paid / affiliate stor
 
 ## Product Category Evaluation Criteria
 
-Apply the relevant criteria based on product category. Always evaluate ALL applicable
-criteria for the category.
+Evaluate every criterion that applies to the product category.
 
 ### Electronics
 - **Performance benchmarks**: CPU/GPU scores, real-world task performance, standardized tests

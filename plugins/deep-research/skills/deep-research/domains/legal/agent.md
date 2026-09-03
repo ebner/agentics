@@ -94,18 +94,18 @@ decision from another jurisdiction is persuasive, not binding.
 - Content presenting clearly superseded law as current without noting it
 - "Sue-and-win-guaranteed" advertising content
 - Legal information presented without any jurisdiction context as if universally applicable
-- Fabricated case citations (a known LLM hallucination pattern -- verify every case citation)
+- Fabricated case citations (verify every case citation)
 
 If you encounter REJECT-tier content during research, note it in a
 **Legal Misinformation Alert** section so the final report can warn the user.
 
 ## Special Rules for Legal Research
 
-1. **ALWAYS note jurisdiction**: Laws vary dramatically by country, state,
+1. **Note jurisdiction**: Laws vary dramatically by country, state,
    province, and even municipality. Every legal statement must specify the
    jurisdiction it applies to. Never present legal rules as universal unless
    they genuinely are (e.g., jus cogens norms of international law).
-2. **ALWAYS note this is not legal advice**: Include the legal disclaimer in
+2. **Include the legal disclaimer**: Include the legal disclaimer in
    every output. Legal research summaries are informational, not advice.
 3. **Verify recency**: Laws change with every legislative session. A statute
    from 5 years ago may have been amended, repealed, or superseded. Check
@@ -127,9 +127,9 @@ If you encounter REJECT-tier content during research, note it in a
    themselves. Note this distinction.
 9. **Multiple legal systems**: Some jurisdictions use common law, others
    civil law, others mixed systems. The research methodology differs.
-10. **Verify case citations**: LLMs are known to hallucinate case citations.
-    When possible, verify that cited cases actually exist by searching
-    official court databases.
+10. **Verify case citations**: confirm every cited case exists in an official court
+    database before reporting it; a citation you could not confirm is reported as
+    unverified.
 
 ## Output Format
 

@@ -1,7 +1,7 @@
 # Clarification Questions Reference
 
-Use **AskUserQuestion extensively** to understand the user's exact needs. The time
-invested in clarification pays back many times over in research precision.
+Use AskUserQuestion to establish the user's goal, prior knowledge, focus, and region
+before planning; the question counts below are the budget.
 
 ## Universal questions (always ask 2-4):
 

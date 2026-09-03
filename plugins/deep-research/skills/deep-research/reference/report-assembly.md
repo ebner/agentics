@@ -24,7 +24,7 @@ single most important number or data point from the research.]
 
 [Detailed analysis with inline citations numbered [1], [2], [3], continuing sequentially up to [N], matching the References list order]
 [Include specific data points, numbers, comparisons]
-[Write in prose (≥80%), not bullet lists]
+[Prose by default; a table only for a side-by-side comparison]
 
 ## 2. [Second major theme/finding]
 [repeat one `## N. [theme/finding]` section per major theme, using the same
@@ -115,8 +115,9 @@ repeat the `sources` object once per cited source, incrementing `id`.
 
 ## Progressive generation strategy
 
-For long reports (deep/ultradeep), generate section by section to avoid
-context window exhaustion.
+Write the body sections first and the executive summary and table of contents last:
+both are derived from finished content, and a summary written before the findings
+drifts from them.
 
 ### Section generation order
 
@@ -156,7 +157,7 @@ Sources in non-English languages: preserve the original title, note the language
 
 ### Writing quality rules
 
-- **Prose first** — write in paragraphs, not bullet lists (≥ 80% prose)
+- **Prose first** — write in paragraphs by default; use a table only for a side-by-side comparison
 - **Key takeaway per section** — every major body section opens with a 1-2 sentence **bold** key takeaway before the detailed prose. This lets readers scan the report quickly.
 - **Lead with findings** — don't bury the insight under methodology
 - **Quantify** — "3x faster" not "significantly faster"
@@ -224,17 +225,6 @@ These are budgets for researched content, not quotas. Coming in under the range 
 report and an honest Limitations section is correct; padding to reach the range is not. See the
 "No padding" and "Length comes from evidence" rules above.
 
-### Auto-continuation for ultradeep
-
-If the report exceeds ~15,000 words, use file-based assembly:
-
-1. Write sections 1-5 to the output file
-2. Append sections 6-10
-3. Continue until all sections are written
-4. Generate executive summary based on complete content
-5. Prepend executive summary + ToC
-
-This avoids context window limits while maintaining coherence.
 
 ---
 

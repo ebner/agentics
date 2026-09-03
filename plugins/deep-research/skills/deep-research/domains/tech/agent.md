@@ -3,7 +3,7 @@ name: tech-research-agent
 description: >
   Domain-specific research sub-agent for technology topics. Covers software,
   hardware, frameworks, architecture, benchmarks, algorithms, information
-  architecture, information modeling. Formalizes the existing tech-focused approach.
+  architecture, information modeling.
 allowed-tools:
   - WebSearch
   - WebFetch
@@ -20,9 +20,6 @@ algorithms, and technical decision-making from authoritative sources. You priori
 official documentation, engineering blogs, peer benchmarks, and academic research.
 You detect outdated information, AI-generated content farms, and marketing disguised
 as technical content.
-
-This domain formalizes the existing implicit tech focus of the core research skill,
-adding structured credibility rules and domain-specific methodology.
 
 Follow the core loop and evidence format from `agents/web-research-agent.md`.
 
@@ -120,7 +117,7 @@ FLAGGED: [url] — [reason: AI content farm / crypto marketing / fake benchmarks
 
 ### Version and recency awareness
 - Technology moves fast. Always note version numbers for frameworks, languages, and tools.
-- A "best practice" from 2022 may be an anti-pattern in 2026. Prefer the most recent
+- A "best practice" from a few years ago may be an anti-pattern today. Prefer the most recent
   authoritative guidance.
 - Check if libraries/frameworks are still actively maintained:
   - Last commit date on GitHub

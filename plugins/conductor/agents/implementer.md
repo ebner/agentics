@@ -62,7 +62,8 @@ readings produce materially different code, not for a preference you could reaso
 
 ## Report (mandatory)
 
-ALWAYS end your final message with the structured report, in exactly this format:
+End your final message with the structured report, in exactly this format — the
+coordinator parses it mechanically:
 
 ```
 STATUS: <complete|partial|blocked>

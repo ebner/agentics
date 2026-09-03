@@ -58,13 +58,13 @@ request 2K (Pro costs the same at 1K and 2K). An explicit `--size` always wins.
 - `png` - Best for illustrations, supports transparency
 - `webp` - Best compression, supports transparency
 
-## Script Path Setup (IMPORTANT — do this first)
+## Script Path Setup (run before any script command)
 
 The scripts directory is located alongside this SKILL.md. Before running any
 script command, discover the path once and reuse it for the entire session:
 
 ```bash
-# Run this ONCE at the start of any image generation session:
+# Discover the path once per session and reuse it:
 RUN_SH="$(find ~/.claude -path '*/gemini-imagegen/scripts/run.sh' -print -quit 2>/dev/null)"
 ```
 
@@ -168,7 +168,7 @@ output.
 
 ```bash
 # Start interactive chat session
-bash "$RUN_SH" multi_turn_chat.py session_name
+bash "$RUN_SH" multi_turn_chat.py --output-dir ./session_name
 ```
 
 ### Convert Existing Images to Transparent PNGs
@@ -217,9 +217,7 @@ bash "$RUN_SH" regenerate.py ./collage.prompt --execute --reference img1.png img
 bash "$RUN_SH" regenerate.py ./hero-main.prompt --execute
 ```
 
-The script reads each `.prompt` sidecar and auto-detects the dispatch type: edits (has `source_image`), compositions (has `source_images`), SVGs (`format: svg`), or plain text-to-image generation. Each type dispatches to its original script (`edit_image`, `compose_images`, `generate_svg`, or `generate_image`) with the original parameters. Use `--reference` to override or inject reference images. **Always dry-run first** (default) to review the plan before using `--execute`.
-
-**Important:** Always prefer using these CLI scripts over inline Python code. They handle virtual environment setup automatically.
+The script reads each `.prompt` sidecar and auto-detects the dispatch type: edits (has `source_image`), compositions (has `source_images`), SVGs (`format: svg`), or plain text-to-image generation. Each type dispatches to its original script (`edit_image`, `compose_images`, `generate_svg`, or `generate_image`) with the original parameters. Use `--reference` to override or inject reference images. The default invocation is a dry run; review its plan, then re-run with `--execute`.
 
 ## PNG Transparency
 
@@ -473,7 +471,7 @@ Then use `--format png --transparent` to convert white to transparent.
 
 If the script fails:
 
-- Check that `GEMINI_API_KEY` is exported or set in ~/.nanobanana.env
+- Check that `GEMINI_API_KEY` is exported; the scripts read only the environment variable.
 - Verify input image files exist and are readable
 - Ensure the output directory is writable
 - If no image is generated, try making the prompt more specific about wanting an image
@@ -482,7 +480,7 @@ If the script fails:
 ## Best Practices
 
 1. Be descriptive in prompts - include style, mood, colors, composition
-2. For logos/graphics, use square aspect ratio (1024x1024)
+2. For logos/graphics, use `--aspect 1:1`
 3. For social media posts, use 9:16 for stories or 1:1 for posts
 4. For wallpapers, use 16:9 or 21:9
 5. For UI illustrations that need transparency, use `--format png --transparent --edge-tolerance 10`

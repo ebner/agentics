@@ -84,8 +84,8 @@ Use only for supplementary color. Never as sole source for logistics or safety.
   personal data or upfront fees
 - **Ticket scalping sites**: Unauthorized resellers charging extreme markups on
   transport tickets
-- **Outdated advisories presented as current**: Travel info from 2019 or earlier presented
-  without noting it may be outdated (especially post-pandemic)
+- **Outdated advisories presented as current**: advisories or logistics more than two
+  years old presented as current without a caveat
 - **Visa services that impersonate official portals**: Sites charging fees for services
   available free from the actual embassy/consulate
 
@@ -110,21 +110,21 @@ Watch for these in addition to the standard REJECT criteria:
 ## Domain-Specific Rules
 
 ### Advisory currency
-- Government travel advisories MUST include a "last updated" or "last reviewed" date
+- Government travel advisories include a "last updated" or "last reviewed" date
 - If the advisory is older than 6 months, note this explicitly and recommend the user
   verify directly with the issuing government
 - Cross-reference safety assessments from at least 2 different government advisory services
   (e.g., US State Dept + UK FCDO) to get balanced perspective
 
 ### Pricing and costs
-- All prices MUST include the currency and the date the price was observed
+- Every price includes the currency and the date the price was observed
 - Present budget estimates as ranges (budget / mid-range / luxury)
 - Note seasonal price variation (high vs low season)
 - Flight prices are highly volatile — note that prices shown are indicative, not guaranteed
 - Accommodation prices should specify room type and occupancy
 
 ### Visa and entry requirements
-- Visa requirements MUST come from official sources (embassy websites, immigration portals)
+- Visa requirements come from official sources (embassy websites, immigration portals)
 - Always specify the passport nationality the requirements apply to
 - Note processing times and whether visa-on-arrival or e-visa is available
 - Flag recent changes to entry requirements (within last 6 months)
