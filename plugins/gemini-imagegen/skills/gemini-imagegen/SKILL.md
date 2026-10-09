@@ -1,10 +1,10 @@
 ---
 name: gemini-imagegen
-description: This skill should be used when generating and editing images using the Gemini API (Nano Banana 2 and Nano Banana Pro). It applies when creating images from text prompts, editing existing images, applying style transfers, generating logos with text, creating stickers, product mockups, style-transferring photos of people while keeping them recognizable (identity/face preservation), keeping a character consistent across images, or any image generation/manipulation task. Supports text-to-image, image editing, multi-turn refinement, and composition from multiple reference images.
+description: This skill should be used when generating and editing images using the Gemini API (Nano Banana 2.1 and Nano Banana Pro). It applies when creating images from text prompts, editing existing images, applying style transfers, generating logos with text, creating stickers, product mockups, style-transferring photos of people while keeping them recognizable (identity/face preservation), keeping a character consistent across images, or any image generation/manipulation task. Supports text-to-image, image editing, multi-turn refinement, and composition from multiple reference images.
 allowed-tools: Read, Write, Glob, Grep, Task, Bash(find:*gemini-imagegen*), Bash(bash:*gemini-imagegen/scripts/run.sh*)
 ---
 
-# Gemini Image Generation (Nano Banana 2 & Pro)
+# Gemini Image Generation (Nano Banana 2.1 & Pro)
 
 Generate and edit images using Google's Gemini API. The environment variable `GEMINI_API_KEY` must be set.
 
@@ -12,10 +12,11 @@ Generate and edit images using Google's Gemini API. The environment variable `GE
 
 | Model | Alias | Resolution | Use For |
 |-------|-------|------------|---------|
-| `gemini-3.1-flash-image` | Nano Banana 2 | 1K-4K (default 1K) | Default for all generation and editing |
+| `gemini-nano-banana-2.1` | Nano Banana 2.1 | 1K-4K (default 1K) | Default for all generation and editing |
 | `gemini-3-pro-image` | Nano Banana Pro | 1K-4K (default 2K) | Identity/face preservation, character consistency |
 
-Legacy IDs `gemini-3.1-flash-image-preview`, `gemini-3-pro-image-preview`, and
+Legacy IDs `gemini-3.1-flash-image` (Nano Banana 2),
+`gemini-3.1-flash-image-preview`, `gemini-3-pro-image-preview`, and
 `gemini-2.5-flash-image` remain accepted by all scripts (so old `.prompt`
 sidecars regenerate) but must not be used for new images.
 
@@ -32,7 +33,7 @@ Add `--model gemini-3-pro-image` if AND ONLY IF at least one of these holds:
 3. The user explicitly asks for "pro", "Nano Banana Pro", "high fidelity", or
    "best quality".
 
-In every other case use the default `gemini-3.1-flash-image`. Do not switch to
+In every other case use the default `gemini-nano-banana-2.1`. Do not switch to
 Pro because a task merely seems difficult or detailed.
 
 When Pro is selected without an explicit `--size`, the scripts automatically
@@ -41,7 +42,7 @@ request 2K (Pro costs the same at 1K and 2K). An explicit `--size` always wins.
 ## Quick Reference
 
 ### Default Settings
-- **Model:** `gemini-3.1-flash-image` (Nano Banana 2); `gemini-3-pro-image` per the Model decision rules
+- **Model:** `gemini-nano-banana-2.1` (Nano Banana 2.1); `gemini-3-pro-image` per the Model decision rules
 - **Resolution:** 1K default (2K default when the pro model is selected; options: 1K, 2K, 4K)
 - **Aspect Ratio:** 1:1 (default)
 - **Format:** jpg (default, options: png, jpg, webp)
@@ -195,7 +196,7 @@ bash "$RUN_SH" regenerate.py ./frontend/public/images/illustrations/ -r --execut
 
 # Regenerate with a new raster model (model upgrade scenario)
 bash "$RUN_SH" regenerate.py ./frontend/public/images/illustrations/ -r --execute \
-    --raster-model gemini-3.1-flash-image
+    --raster-model gemini-nano-banana-2.1
 
 # Override SVG model
 bash "$RUN_SH" regenerate.py ./assets/ -r --execute \
@@ -274,7 +275,7 @@ The `.prompt` file is created alongside the image:
 
 ```yaml
 ---
-model: gemini-3.1-flash-image
+model: gemini-nano-banana-2.1
 aspect_ratio: "1:1"
 resolution: 1K
 format: png
@@ -338,7 +339,7 @@ directly (Google Search grounding, custom pipelines), read
 `reference/api-patterns.md` in this skill directory for the API patterns:
 basic generation, resolution/aspect config, editing, multi-turn chat,
 search grounding, multi-reference composition, and how to skip `part.thought`
-parts when using `gemini-3-pro-image`.
+parts (both `gemini-nano-banana-2.1` and `gemini-3-pro-image` are thinking models).
 
 ## SVG Vector Generation (Gemini 3.1 Pro)
 
@@ -346,8 +347,8 @@ Gemini 3.1 Pro can generate SVG markup directly as code output. This uses the **
 
 ### When to use SVG vs Raster (PNG/JPG)
 
-| Use SVG | Use Raster (Nano Banana 2) |
-|---------|---------------------------|
+| Use SVG | Use Raster (Nano Banana 2.1) |
+|---------|-----------------------------|
 | Icons and simple UI graphics | Branded illustrations (style guide) |
 | Animated elements (loaders, transitions) | Photorealistic or painterly scenes |
 | Diagrams and infographics | Complex gradients and soft shadows |
@@ -431,7 +432,7 @@ with open("output.svg", "w") as f:
 - Output quality depends on scene complexity — simple icons are excellent, photorealistic scenes are poor
 - Results vary between runs — regenerate if the first attempt isn't right
 - Not suitable for richly-shaded branded illustration styles (soft shadows, diffused lighting, complex layered motifs)
-- Cannot edit existing raster images — use Nano Banana 2 for that
+- Cannot edit existing raster images — use Nano Banana 2.1 for that
 - A `.prompt` sidecar file is created alongside the SVG, same as for raster images
 
 ## Prompting Best Practices

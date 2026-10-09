@@ -29,7 +29,7 @@ with source credibility assessment.
 
 ### gemini-imagegen
 
-Image generation and editing using Google's Gemini API. Supports text-to-image,
+Image generation and editing using Google's Gemini API (Nano Banana 2.1). Supports text-to-image,
 image editing, SVG vector generation, multi-image composition, multi-turn
 refinement, and automatic transparency conversion. Includes prompt sidecar
 metadata files for reproducibility. Nano Banana Pro support adds

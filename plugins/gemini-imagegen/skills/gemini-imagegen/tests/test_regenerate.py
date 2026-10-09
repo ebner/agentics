@@ -327,7 +327,7 @@ class TestPlanRegeneration:
         prompt_path = _make_prompt_path(tmp_path)
         metadata = {"format": "png", "final_prompt": "A cat"}
         plan = plan_regeneration(metadata, prompt_path, raster_model=None, svg_model=None)
-        assert plan["model"] == "gemini-3.1-flash-image"
+        assert plan["model"] == "gemini-nano-banana-2.1"
 
     def test_sidecar_recorded_legacy_model_wins_over_fallback(self, tmp_path):
         """A recorded preview-era model is kept verbatim (no silent upgrade)."""

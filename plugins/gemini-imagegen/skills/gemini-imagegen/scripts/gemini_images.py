@@ -37,8 +37,9 @@ from models import (
 AspectRatio = Literal["1:1", "2:3", "3:2", "3:4", "4:3", "4:5", "5:4", "9:16", "16:9", "21:9"]
 ImageSize = Literal["1K", "2K", "4K"]
 Model = Literal[
-    "gemini-3.1-flash-image",
+    "gemini-nano-banana-2.1",
     "gemini-3-pro-image",
+    "gemini-3.1-flash-image",
     "gemini-3.1-flash-image-preview",
     "gemini-3-pro-image-preview",
     "gemini-2.5-flash-image",
@@ -49,7 +50,7 @@ OutputFormat = Literal["png", "jpg", "webp"]
 class GeminiImageGenerator:
     """High-level interface for Gemini image generation."""
 
-    NANO_BANANA = FLASH_MODEL          # Nano Banana 2 (default)
+    NANO_BANANA = FLASH_MODEL          # Nano Banana 2.1 (default)
     NANO_BANANA_PRO = PRO_MODEL        # Nano Banana Pro
     FLASH = "gemini-2.5-flash-image"   # legacy
 

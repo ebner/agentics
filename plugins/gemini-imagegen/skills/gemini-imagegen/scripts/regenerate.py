@@ -14,7 +14,7 @@ Usage:
     python regenerate.py path/to/image.prompt                    # Dry run (single file)
     python regenerate.py path/to/illustrations/ --recursive      # Dry run (batch)
     python regenerate.py path/to/illustrations/ -r --execute     # Regenerate all
-    python regenerate.py path/to/ -r --execute --raster-model gemini-3.1-flash-image
+    python regenerate.py path/to/ -r --execute --raster-model gemini-nano-banana-2.1
 
 Examples:
     # Preview what would be regenerated
@@ -22,7 +22,7 @@ Examples:
 
     # Regenerate all with a new model (raster only)
     python regenerate.py ./frontend/public/images/illustrations/ -r --execute \
-        --raster-model gemini-3.1-flash-image
+        --raster-model gemini-nano-banana-2.1
 
     # Filter by type: svg, raster, edit, or composition
     python regenerate.py ./assets/ -r --execute --filter svg

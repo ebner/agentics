@@ -16,7 +16,7 @@ client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
 
 # Basic generation (1K, 1:1 - defaults)
 response = client.models.generate_content(
-    model="gemini-3.1-flash-image",
+    model="gemini-nano-banana-2.1",
     contents=["Your prompt here"],
     config=types.GenerateContentConfig(
         response_modalities=['TEXT', 'IMAGE'],
@@ -31,8 +31,8 @@ for part in response.parts:
         image.save("output.jpg")
 ```
 
-**Thought parts (`gemini-3-pro-image`):** the pro model is a thinking model
-and can return interleaved thought text/images in `response.parts`, marked
+**Thought parts (`gemini-nano-banana-2.1`, `gemini-3-pro-image`):** both are
+thinking models and can return interleaved thought text/images in `response.parts`, marked
 with `part.thought == True`. Skip them when extracting output:
 
 ```python
@@ -51,7 +51,7 @@ for part in response.parts:
 from google.genai import types
 
 response = client.models.generate_content(
-    model="gemini-3.1-flash-image",
+    model="gemini-nano-banana-2.1",
     contents=[prompt],
     config=types.GenerateContentConfig(
         response_modalities=['TEXT', 'IMAGE'],
@@ -72,7 +72,7 @@ from PIL import Image
 
 img = Image.open("input.png")
 response = client.models.generate_content(
-    model="gemini-3.1-flash-image",
+    model="gemini-nano-banana-2.1",
     contents=["Add a sunset to this scene", img],
     config=types.GenerateContentConfig(
         response_modalities=['TEXT', 'IMAGE'],
@@ -88,7 +88,7 @@ Use chat for iterative editing:
 from google.genai import types
 
 chat = client.chats.create(
-    model="gemini-3.1-flash-image",
+    model="gemini-nano-banana-2.1",
     config=types.GenerateContentConfig(response_modalities=['TEXT', 'IMAGE'])
 )
 

@@ -1,6 +1,6 @@
 # Gemini Image Generation Plugin
 
-Image generation and editing using Google's Gemini API (Nano Banana 2, plus Nano Banana Pro for identity-preserving edits).
+Image generation and editing using Google's Gemini API (Nano Banana 2.1, plus Nano Banana Pro for identity-preserving edits).
 
 ## Installation
 

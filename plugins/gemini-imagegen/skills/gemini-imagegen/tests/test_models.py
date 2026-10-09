@@ -29,6 +29,7 @@ class TestDefaultSizeForModel:
     def test_legacy_flash_without_size_stays_none(self):
         assert default_size_for_model("gemini-2.5-flash-image", None) is None
         assert default_size_for_model("gemini-3.1-flash-image-preview", None) is None
+        assert default_size_for_model("gemini-3.1-flash-image", None) is None
 
     def test_explicit_size_wins_on_pro(self):
         assert default_size_for_model(PRO_MODEL, "1K") == "1K"
@@ -44,7 +45,7 @@ class TestDefaultSizeForModel:
 class TestModelChoicesContract:
     def test_ga_ids_are_canonical(self):
         # Pins the sidecar/docs contract: GA IDs, flash is the default
-        assert FLASH_MODEL == "gemini-3.1-flash-image"
+        assert FLASH_MODEL == "gemini-nano-banana-2.1"
         assert PRO_MODEL == "gemini-3-pro-image"
         assert DEFAULT_MODEL == FLASH_MODEL
 
@@ -53,6 +54,7 @@ class TestModelChoicesContract:
         assert FLASH_MODEL in RASTER_MODEL_CHOICES
         assert PRO_MODEL in RASTER_MODEL_CHOICES
         for legacy in (
+            "gemini-3.1-flash-image",
             "gemini-3.1-flash-image-preview",
             "gemini-3-pro-image-preview",
             "gemini-2.5-flash-image",

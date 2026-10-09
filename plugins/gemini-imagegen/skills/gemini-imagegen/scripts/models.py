@@ -6,11 +6,12 @@ and regenerate.py.
 """
 
 # GA model IDs (canonical)
-FLASH_MODEL = "gemini-3.1-flash-image"  # Nano Banana 2 -- default
+FLASH_MODEL = "gemini-nano-banana-2.1"  # Nano Banana 2.1 -- default
 PRO_MODEL = "gemini-3-pro-image"        # Nano Banana Pro
 
 # Superseded IDs still accepted so existing .prompt sidecars regenerate unchanged
 LEGACY_MODELS = [
+    "gemini-3.1-flash-image",
     "gemini-3.1-flash-image-preview",
     "gemini-3-pro-image-preview",
     "gemini-2.5-flash-image",
@@ -42,8 +43,9 @@ def default_size_for_model(model: str, image_size: str | None) -> str | None:
 def extract_text_and_image(parts):
     """Extract the final text and image from response parts.
 
-    Skips thought parts: gemini-3-pro-image is a thinking model that can
-    return interleaved thought text/images marked with part.thought == True.
+    Skips thought parts: gemini-nano-banana-2.1 and gemini-3-pro-image are
+    thinking models that can return interleaved thought text/images marked
+    with part.thought == True.
     Returns (text, image) where image is the result of part.as_image() on the
     last non-thought inline_data part, or None for either slot if absent.
     """
