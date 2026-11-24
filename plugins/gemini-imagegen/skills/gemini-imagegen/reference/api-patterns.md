@@ -12,7 +12,10 @@ import os
 from google import genai
 from google.genai import types
 
-client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
+# v1beta serves the preview models; google-genai 3.x otherwise defaults to v1
+client = genai.Client(
+    api_key=os.environ["GEMINI_API_KEY"], http_options={"api_version": "v1beta"}
+)
 
 # Basic generation (1K, 1:1 - defaults)
 response = client.models.generate_content(

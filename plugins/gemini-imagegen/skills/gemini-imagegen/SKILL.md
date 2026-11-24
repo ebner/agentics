@@ -380,7 +380,10 @@ bash "$RUN_SH" generate_svg.py \
 import os
 from google import genai
 
-client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
+# v1beta serves the preview models; google-genai 3.x otherwise defaults to v1
+client = genai.Client(
+    api_key=os.environ["GEMINI_API_KEY"], http_options={"api_version": "v1beta"}
+)
 
 response = client.models.generate_content(
     model="gemini-3.1-pro-preview",

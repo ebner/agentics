@@ -29,6 +29,7 @@ from google.genai import types
 
 from generate_image import make_transparent
 from models import (
+    API_VERSION,
     DEFAULT_MODEL,
     RASTER_MODEL_CHOICES,
     default_size_for_model,
@@ -165,7 +166,7 @@ def compose_images(
         if not os.path.exists(path):
             raise FileNotFoundError(f"Image not found: {path}")
 
-    client = genai.Client(api_key=api_key)
+    client = genai.Client(api_key=api_key, http_options={"api_version": API_VERSION})
 
     # Load images
     images = [Image.open(path) for path in image_paths]

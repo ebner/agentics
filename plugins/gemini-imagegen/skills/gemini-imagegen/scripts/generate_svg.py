@@ -26,6 +26,8 @@ from pathlib import Path
 
 from google import genai
 
+from models import API_VERSION
+
 
 def write_prompt_sidecar(
     output_path: str,
@@ -142,7 +144,7 @@ def generate_svg(
     if not api_key:
         raise EnvironmentError("GEMINI_API_KEY environment variable not set")
 
-    client = genai.Client(api_key=api_key)
+    client = genai.Client(api_key=api_key, http_options={"api_version": API_VERSION})
 
     full_prompt = build_prompt(prompt, viewbox, animated, style)
 

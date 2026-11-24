@@ -27,6 +27,7 @@ from generate_image import make_transparent, write_prompt_sidecar
 from edit_image import write_edit_prompt_sidecar, read_existing_prompt
 from compose_images import write_compose_prompt_sidecar
 from models import (
+    API_VERSION,
     FLASH_MODEL,
     PRO_MODEL,
     default_size_for_model,
@@ -65,7 +66,9 @@ class GeminiImageGenerator:
         if not self.api_key:
             raise EnvironmentError("GEMINI_API_KEY not set")
 
-        self.client = genai.Client(api_key=self.api_key)
+        self.client = genai.Client(
+            api_key=self.api_key, http_options={"api_version": API_VERSION}
+        )
         self.model = model
 
     def _build_config(

@@ -2,7 +2,7 @@
 
 Single source of truth for model identifiers used by generate_image.py,
 edit_image.py, compose_images.py, multi_turn_chat.py, gemini_images.py,
-and regenerate.py.
+generate_svg.py, and regenerate.py.
 """
 
 # GA model IDs (canonical)
@@ -18,6 +18,10 @@ LEGACY_MODELS = [
 ]
 
 DEFAULT_MODEL = FLASH_MODEL
+
+# Gemini API version for every client. google-genai 3.x defaults to the stable "v1" API,
+# which does not serve preview models (the SVG text model and the legacy preview image IDs).
+API_VERSION = "v1beta"
 
 # argparse --model choices for every raster script
 RASTER_MODEL_CHOICES = [FLASH_MODEL, PRO_MODEL, *LEGACY_MODELS]

@@ -32,6 +32,7 @@ from google import genai
 from google.genai import types
 
 from models import (
+    API_VERSION,
     DEFAULT_MODEL,
     RASTER_MODEL_CHOICES,
     default_size_for_model,
@@ -51,7 +52,7 @@ class ImageChat:
         if not api_key:
             raise EnvironmentError("GEMINI_API_KEY environment variable not set")
         
-        self.client = genai.Client(api_key=api_key)
+        self.client = genai.Client(api_key=api_key, http_options={"api_version": API_VERSION})
         self.model = model
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(parents=True, exist_ok=True)
@@ -198,7 +199,7 @@ def main():
         try:
             # If we have a loaded image and this is first message, include it
             image_to_send = None
-            if chat.current_image and not chat.chat.history:
+            if chat.current_image and not chat.chat.get_history():
                 image_to_send = chat.current_image
             
             text, image = chat.send_message(user_input, image_to_send)

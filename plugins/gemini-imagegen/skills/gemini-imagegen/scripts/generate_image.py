@@ -25,6 +25,7 @@ from google import genai
 from google.genai import types
 
 from models import (
+    API_VERSION,
     DEFAULT_MODEL,
     RASTER_MODEL_CHOICES,
     default_size_for_model,
@@ -216,7 +217,7 @@ def generate_image(
     if not api_key:
         raise EnvironmentError("GEMINI_API_KEY environment variable not set")
 
-    client = genai.Client(api_key=api_key)
+    client = genai.Client(api_key=api_key, http_options={"api_version": API_VERSION})
 
     # Build config
     config_kwargs = {"response_modalities": ["TEXT", "IMAGE"]}
