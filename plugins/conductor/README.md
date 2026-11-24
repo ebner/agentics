@@ -10,7 +10,7 @@ Components:
 
 | Component | What it is |
 |-----------|------------|
-| `/conductor:implement` | **Command** — the coordinator script: plan or accept a plan → dual plan review → per-unit spec/implement/verify/fix (linear), or `--fanout` → close-out with cross-model review. |
+| `/conductor:implement` | **Command** — the coordinator script: plan or accept a plan → dual plan review → per-unit spec/implement/verify/fix (linear), or `--fanout` → close-out with cross-model review. Every run keeps a ledger and can be continued with `--resume`. |
 | `conductor-implementer` | **Agent** — the claude-lane implementer (opus by default; no Bash — edit-only is structurally enforced). Launched only by the command. |
 | `conductor-reviewer` | **Agent** — stateless evidence-forcing reviewer (inherits your session's model — review stays on the big tier). Launched only by the command. |
 | `delegation-doctrine` | **Skill** — the coordinator doctrine: roles, five-part spec + report contract, escalation ladder, review rubric (with `reference/` templates). |
@@ -52,6 +52,7 @@ exec resume` takes no `-s` flag, so resume calls now pass the sandbox via
 ```
 /conductor:implement [path/to/plan.md | task description] [--fanout] [--backend codex|claude]
                      [--base <branch>] [--integration <branch>] [--implementer-model opus|sonnet]
+/conductor:implement --resume [run-id]
 ```
 
 Two entry modes:
@@ -60,7 +61,11 @@ Two entry modes:
   plan in plan mode; it resolves the session's plan automatically). The command reviews the plan
   (cross-model when codex is available), then implements it unit by unit.
 - **Raw-task mode** — pass a task description. The coordinator explores the codebase, drafts a
-  plan, reviews it, and **pauses for your approval** before implementing anything.
+  plan, reviews it, and **pauses for your approval** before implementing anything. When codex is
+  available and the task changes a public interface, a persistent schema, or the dependencies,
+  or has two plausible approaches, codex first writes its own plan without seeing the
+  coordinator's. The coordinator compares the two after drafting and records each divergence it
+  adopted or rejected in the plan.
 
 A delegation-worthiness gate declines orchestration for tiny tasks (under 20 changed lines in at
 most 2 files) where the overhead exceeds the savings — you choose direct implementation instead.
@@ -89,6 +94,7 @@ backend: auto                    # codex | claude | auto
 claude_implementer_model: opus   # opus | sonnet
 codex_effort: xhigh              # implementation/fix calls only; reviews always run xhigh
 codex_model: ""                  # empty = your configured codex default
+independent_plan: auto           # auto | always | never — codex's independent plan in raw-task mode
 fast_gate: ""                    # override gate discovery, e.g. "npm run typecheck && npm test -- --changed"
 heavy_gate: ""                   # e.g. "npm test && npm run e2e"
 ---
@@ -117,6 +123,27 @@ parallel agents and implementer sessions — meant for plans with genuinely inde
   merge is yours to review. Units that exhaust the ladder come back to the coordinator with their
   spec and last failure log (the announced last-resort rung), and close-out review runs against
   the integration branch.
+
+## Run ledger and `--resume`
+
+Every run writes an append-only ledger to `.git/conductor/runs/<run-id>/` (inside the git
+directory, so it is never tracked and needs no `.gitignore` entry). It holds the run
+configuration, one log line per dispatch, report, gate run, and review, and verbatim copies of
+codex output, gate output, and reviewer output. The coordinator reads it after a context
+compaction, the close-out report takes unit outcomes from it, and you can audit any claim in the
+report against it.
+
+If a session dies mid-run, continue it from a new session:
+
+```
+/conductor:implement --resume              # the most recent unfinished run
+/conductor:implement --resume <run-id>     # a specific run
+```
+
+Units already finished are skipped. An attempt that was in flight is rolled back to its snapshot
+and retried fresh, counting as one attempt. A fan-out run can only be resumed from the session
+that launched it; from another session you choose between re-running the fan-out and stopping.
+Delete `.git/conductor/runs/` whenever no run is active.
 
 ## Safety model (summary; full detail in the `calling-codex` skill)
 

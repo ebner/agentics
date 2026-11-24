@@ -20,7 +20,7 @@
       "name": "conductor",
       "source": "./plugins/conductor",
       "description": "Plan big, execute small — the coordinating model plans, reviews, and runs every build/test/merge; a cheaper pluggable implementer (OpenAI Codex CLI or a Claude subagent) writes all the code",
-      "version": "1.2.0"
+      "version": "1.3.0"
     }
   ]
 }

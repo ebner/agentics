@@ -46,7 +46,9 @@ mapping) lives in the `delegation-doctrine` skill — this skill covers only the
      alone is complete.
 2. **Plan review** (no diff yet) → `codex exec -s read-only "<review request + the plan text embedded
    inline>"`. Codex's sandbox cannot read paths outside the workspace, so embed the plan text in the
-   prompt; end the prompt with one final line `VERDICT: APPROVED` or `VERDICT: REVISE`.
+   prompt; end the prompt with one final line `VERDICT: APPROVED` or `VERDICT: REVISE`. The Stage 1
+   independent proposal uses the same read-only invocation with its own brief and no `VERDICT`
+   line.
 3. **Task / implementation** → `codex exec -s workspace-write`. Continue an existing run with
    `codex exec resume <session-id>` — note resume's narrower flag set in the Guardrails below.
 

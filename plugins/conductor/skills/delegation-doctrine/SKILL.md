@@ -7,7 +7,8 @@ description: >
   failing unit, or when the /conductor:implement command or the implement-fanout workflow runs.
   Covers the roles and role lock, the backend contract (codex and claude lanes), the spec and
   report formats, verification ownership, the escalation ladder, sizing rules, the review
-  doctrine, and coordinator conduct (evidence-grounded claims, autonomy, reporting).
+  doctrine, the run ledger and resume, and coordinator conduct (evidence-grounded claims,
+  autonomy, reporting).
 allowed-tools:
   - Read
   - Bash
@@ -217,6 +218,16 @@ per the role-lock exception I am implementing <id> directly.
 
 - The reviewer is stateless and independent: a fresh `conductor-reviewer` context per review,
   never the implementer reviewing its own work.
+- **Reviewers get the artifact and the brief, never the delegation history.** No brief includes
+  an implementer report or `IMPLEMENTER-SAID` line, the coordinator's tentative verdict or its
+  Fully Implemented / Compromises / Outstanding record, or another reviewer's findings or verdict.
+  Those are claims about the artifact, and a reviewer that reads them checks the claims instead of
+  the artifact. The same holds for the coordinator's adopt/reject record on an independent
+  proposal: the plan text embedded in a brief omits its `## Independent proposal — divergences`
+  section. Facts the coordinator observed about the baseline, such as the list of failures that
+  pre-exist the change, are not history and stay in the brief. Exactly one exception: a
+  Stage 2 codex re-review may `resume` its own session with a "what changed" note. That session
+  holds only its own earlier verdict, not another source's.
 - Cross-model review whenever the codex backend is available (codex reviews what claude-side
   agents wrote and vice versa); when it is not, the stateless different-context reviewer is the
   stated fallback.
@@ -244,9 +255,10 @@ Four rules follow from that:
 
 - **Claims come from artifacts, never recollection.** Every status the coordinator reports — a unit's
   outcome, a gate result, a CHANGES list, a source count — is read from a recorded artifact: the
-  per-unit diff against its 3a snapshot, a command's exit status and captured output, the plan file.
-  §6 states this for implementer reports; it applies equally to what the coordinator tells the user.
-  Where a claim cannot be traced to an artifact, report it as unverified rather than asserting it.
+  run ledger (`reference/run-ledger.md`), the per-unit diff against its 3a snapshot, a command's
+  exit status and captured output, the plan file. §6 states this for implementer reports; it
+  applies equally to what the coordinator tells the user. Where a claim cannot be traced to an
+  artifact, report it as unverified rather than asserting it.
 - **Decide routine matters; stop only at the enumerated forks.** The command's §Forks list is the
   complete set of stopping points. Naming, formatting, which of two equivalent spec phrasings to use,
   and how to word a constraint are the coordinator's own calls — make them and move on. Do not add a

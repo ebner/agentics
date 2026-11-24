@@ -44,8 +44,9 @@ network-off) or a Claude subagent (edit tools only) — writes all the code. One
 (`/conductor:implement`) with a linear default and a `--fanout` mode (decompose into
 file-disjoint units → parallel worktree implementers → verify/merge gate). Backend-agnostic
 five-part spec + structured report contract, a cross-backend escalation ladder, cross-model
-review on both ends, and a project-agnostic build/test gate discovered from the target project's
-own config. Replaces the former codex-orchestration plugin.
+review on both ends, a project-agnostic build/test gate discovered from the target project's
+own config, and an append-only run ledger that lets an interrupted run continue with `--resume`.
+Replaces the former codex-orchestration plugin.
 
 ## License
 

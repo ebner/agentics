@@ -3,7 +3,9 @@
 Every review the conductor runs — plan review and final changeset review — uses a brief built from
 these templates. The reviewer is the stateless `conductor-reviewer` agent (or `codex exec` /
 `codex review` for the cross-model half). Briefs supply criteria + a no-fire list; the rubric
-principles below govern how the criteria are written.
+principles below govern how the criteria are written. What a brief must never contain (implementer
+reports, the coordinator's tentative verdict, other reviewers' output) is doctrine §10's
+no-history rule.
 
 ## 1. Rubric principles
 
@@ -165,3 +167,30 @@ Codex's sandbox cannot read paths outside the workspace, so the brief and the fu
 embedded in the prompt file, run read-only per the `calling-codex` skill, and the verdict is read
 from the `-o` capture file. The prompt must end with the same final-line instruction:
 "End your reply with exactly one line: `VERDICT: APPROVED` or `VERDICT: REVISE`."
+
+## 6. Independent-proposal brief
+
+Used by: the read-only codex call in Stage 1 (raw-task mode, when the independent proposal is
+triggered). This is a proposal, not a review, so it carries no verdict rule. It gets the task and
+nothing of the coordinator's: no draft plan, no exploration notes, no preferred approach. Run it
+with the plan-review invocation from the `calling-codex` skill (read-only, `xhigh`, `-o` capture).
+
+```
+Propose an implementation plan for the task below, working from this repository as it actually
+is. Another planner is writing a plan for the same task independently; you will not see it. Do not
+edit any file.
+
+TASK (verbatim from the user):
+<the user's task description, verbatim>
+
+Explore the code the task touches and the project's documented conventions (CLAUDE.md / AGENTS.md)
+yourself. Then reply with:
+
+1. Approach — the overall approach in at most 5 sentences, and the main alternative you rejected
+   with one sentence on why.
+2. Units — numbered; each with Files, acceptance criteria, verification command(s), and
+   dependencies on other units.
+3. Risks — what is most likely to go wrong, with file:line evidence where the risk is in existing
+   code.
+4. Assumptions — anything the task leaves open that you had to decide.
+```

@@ -1,6 +1,6 @@
 ---
 description: Orchestrate implementation of a plan or task — the coordinator plans/reviews/verifies, a cheaper implementer (Codex CLI or a Claude subagent) writes all the code
-argument-hint: "[plan.md path | task description] [--fanout] [--backend codex|claude] [--base <branch>] [--integration <branch>] [--implementer-model opus|sonnet]"
+argument-hint: "[plan.md path | task description] [--fanout] [--backend codex|claude] [--base <branch>] [--integration <branch>] [--implementer-model opus|sonnet] [--resume [run-id]]"
 allowed-tools: ["Read", "Write", "Edit", "Bash", "Agent", "AskUserQuestion", "Skill", "Workflow"]
 ---
 
@@ -26,23 +26,32 @@ plan first and pause for the user's approval of the plan).
 > nothing ever pushed; gate agents act as coordinator-tier delegates).
 >
 > **Conduct:** doctrine §11 governs how you report — every status claim is read from an artifact
-> (a diff, an exit status, the plan file) and never from recollection; corrections are one sentence
-> and only when they change the user's decisions; the Stage 4 report re-grounds a user who has not
-> been watching.
+> (the run ledger, a diff, an exit status, the plan file) and never from recollection; corrections
+> are one sentence and only when they change the user's decisions; the Stage 4 report re-grounds a
+> user who has not been watching.
+>
+> **Run ledger:** every run keeps an append-only ledger per the doctrine's `reference/run-ledger.md`
+> (location, events, resume). Append each event at the point that file's §2 names. After a context
+> compaction mid-run, re-read the ledger before your next action.
 
 ## Usage
 
 ```
 /conductor:implement [path/to/plan.md | task description] [--fanout] [--backend codex|claude]
                      [--base <branch>] [--integration <branch>] [--implementer-model opus|sonnet]
+/conductor:implement --resume [run-id]
 ```
+
+`--resume` continues an interrupted run from its ledger: after Stage 0 steps 1–2, load the
+`delegation-doctrine` skill, read its `reference/run-ledger.md`, and follow its §4 instead of
+Stage 0 steps 3–8.
 
 ## Pipeline overview
 
 | Stage | What runs | Who | Bound |
 |-------|-----------|-----|-------|
 | 0 | Settings, backend selection, entry resolution, worthiness gate, gate discovery, role lock, baseline | coordinator | — |
-| 1 | (raw-task mode only) explore + draft the plan | coordinator | — |
+| 1 | (raw-task mode only) explore + independent proposal when triggered + draft the plan | coordinator; codex for the proposal | 1 proposal |
 | 2 | Plan review + revise; raw-task mode ends with a user approval pause | reviewers per Stage 2 | ≤ 3 rounds |
 | 3 | Per-unit spec → implement → verify → fix (linear), or `--fanout` workflow | implementer edits; **coordinator verifies** | ≤ 2 fix rounds per lane, ≤ 2 lanes, then coordinator |
 | 4 | Close-out: heavy gate, simplification list, final review, 1 fix round, consolidate | coordinator + reviewers | 1 close-out fix round |
@@ -53,9 +62,12 @@ plan first and pause for the user's approval of the plan).
    optional): `backend: auto|codex|claude` (default `auto`), `claude_implementer_model:
    opus|sonnet` (default `opus`), `codex_effort` (default `xhigh`; implementation and fix calls
    only), `codex_model` (default empty = the user's configured codex model), `fast_gate`,
-   `heavy_gate` (shell commands overriding step 5's discovery). Precedence, in order: command
-   flag > settings key > default. The RUN CONFIG block (backend, codexAvailable, lane models,
-   gate commands, base branch, baseline) is finalized after step 7; later stages reference it.
+   `heavy_gate` (shell commands overriding step 5's discovery), `independent_plan:
+   auto|always|never` (default `auto`; Stage 1). Precedence, in order: command flag > settings
+   key > default. The RUN CONFIG block (backend, codexAvailable, lane models, gate commands, base
+   branch, baseline, independent_plan, execution mode linear or fan-out, and for fan-out the
+   `--base` and `--integration` branches resolved per the fan-out branch's step 1) is finalized
+   after step 7; later stages reference it.
 2. **Backend selection** (run the detection exactly once):
    - Forced `--backend codex` (flag or settings): run `codex --version`, `codex login status`,
      and `command -v jq`. Any failure → `AskUserQuestion` (switch to the claude lane / stop so
@@ -107,22 +119,54 @@ plan first and pause for the user's approval of the plan).
 7. **Working-tree baseline.** Record `git status --porcelain`. If non-empty → `AskUserQuestion`
    (proceed — rollbacks become best-effort, scoped to files this run touches — or stop so the
    user can commit/stash first). The baseline scopes all later rollbacks and per-unit deltas.
+8. **Open the run ledger.** Create the run directory and write `run.md` per
+   `reference/run-ledger.md` §1, then append `stage` 0 `entered`. Announce the run id once, so the
+   user can pass it to `--resume`.
 
 ## Stage 1 — Plan (raw-task mode only)
 
 Explore the codebase first: the project's conventions, the code the task touches, and existing
-utilities that should be reused instead of new code. Then write the plan to
-`~/.claude/plans/<branch-slug>.md` (branch name slugified, `/` → `-`; add a `-<topic-slug>`
-suffix if that file exists for an unrelated plan). Required structure: numbered units, each with
-Files / acceptance criteria / verification command(s) / dependencies. Stay inside doctrine §9's
-sizing band: no unit below the worthiness floor (merge undersized units), and no more than 20 units
-in the plan or 12 in any one dependency wave (merge adjacent same-file units, or split the work into
-separate runs). Do not pause for approval yet — Stage 2 reviews first, then pauses.
+utilities that should be reused instead of new code.
+
+**Independent proposal — decide.** A second model can propose its own plan without seeing yours,
+so where the two diverge, the divergence is not anchored to your draft. It runs when codex is
+available and either `independent_plan: always` is set, or `independent_plan: auto` is set and
+both of these hold:
+- your exploration estimates the task above the worthiness floor (doctrine §9);
+- the change will do at least one of these: alter a public interface (an exported API, CLI flags,
+  an HTTP endpoint, or a file format or wire protocol other code consumes), change a persistent
+  schema or include a data migration, add a runtime dependency, or choose between two approaches
+  you can name that would change different sets of files.
+
+Otherwise skip it and say why in one line (codex unavailable, `never`, or no trigger matched).
+When it runs, launch the read-only codex call with the independent-proposal brief from the
+doctrine's `reference/review-rubric.md` §6 in the background now, and draft while it runs.
+
+**Draft.** Write the plan to `~/.claude/plans/<branch-slug>.md` (branch name slugified, `/` → `-`;
+add a `-<topic-slug>` suffix if that file exists for an unrelated plan). Required structure:
+numbered units, each with Files / acceptance criteria / verification command(s) / dependencies.
+Stay inside doctrine §9's sizing band: no unit below the worthiness floor (merge undersized units),
+and no more than 20 units in the plan or 12 in any one dependency wave (merge adjacent same-file
+units, or split the work into separate runs). Append the plan path to the ledger's `run.md`.
+
+**Independent proposal — compare.** The order is fixed: read the proposal only after your plan
+file is written, or the comparison is anchored after all. Copy the proposal into the ledger's
+`artifacts/`. For each material divergence (a different overall approach, a unit or risk your plan
+lacks, or a different FILES set for the same unit), adopt it into the plan or reject it, and record
+it under `## Independent proposal — divergences` as one line: what differed, adopted or rejected,
+and why. A codex failure here is not a stop: note it in one line and continue without the proposal.
+
+Do not pause for approval yet — Stage 2 reviews first, then pauses.
 
 ## Stage 2 — Plan review (≤ 3 rounds)
 
 Reviewer briefs live in the doctrine's `reference/review-rubric.md`; read that file before
-launching the first reviewer.
+launching the first reviewer. Briefs follow doctrine §10's no-history rule: a fresh reviewer in a
+later round gets the revised plan, never the previous round's findings or verdicts, and the plan
+text embedded in any brief omits the `## Independent proposal — divergences` section. Save each
+reviewer's full output to the ledger's `artifacts/` and append its `review` line. Append `stage` 2
+`plan-approved` when every reviewer approves, and `user-approved` when the user approves at the
+raw-task pause.
 
 - **Codex available** → run both, in parallel where possible:
   1. **Codex plan review (read-only).** Codex's sandbox cannot read paths outside the workspace,
@@ -160,7 +204,14 @@ First, **derive the unit list**: if the plan is already structured into numbered
 with files and acceptance criteria, use them; otherwise decompose the plan into units (Files /
 acceptance criteria / verification command(s) / dependencies — the Stage 1 shape) and annotate
 the unit list into the plan file (an orchestration act, allowed under the role lock; a small plan
-collapses to one unit).
+collapses to one unit). Append the unit list to the ledger's `run.md` and append `stage` 3
+`entered`.
+
+Ledger points in the per-unit loop: `snapshot` at 3a; `dispatch` immediately **before** every
+attempt in 3b, 3e, and 3f, rung 3 included; `report` at 3c, for an assigned `timeout` or
+`unavailable`, and when your own rung-3 edits are done; `gate`
+after every 3d run, with the full gate output saved under `artifacts/`; `unit` when U reaches its
+final state.
 
 Then, for each unit **U** in dependency order:
 
@@ -237,7 +288,10 @@ Runs instead of the linear loop, after Stage 2. Spawns many parallel agents — 
    Empty → stop and tell the user to install/update `conductor@agentics`.
 3. Launch it: `Workflow({ scriptPath: WF, args: { planPath, base, integrationBranch, backend,
    codexAvailable, claudeImplementerModel, codexEffort, codexModel } })` — backend already
-   resolved by Stage 0 (never pass `auto` from here).
+   resolved by Stage 0 (never pass `auto` from here). Append `stage` 3 `entered` before the
+   call, and `fanout` with the returned run id and `state: launched` after it. When the completion
+   notification arrives, record `fanout finished` and the per-unit lines per
+   `reference/run-ledger.md` §2.
 4. Relay the consolidated result verbatim (units, waves, integrated, failed, final gate). For
    each `failed[]` unit, apply rung 3 per doctrine §8 (it arrives with its spec and last verbatim
    failure log).
@@ -248,8 +302,11 @@ Runs instead of the linear loop, after Stage 2. Spawns many parallel agents — 
 ## Stage 4 — Close-out
 
 If the project has a dedicated post-implementation pipeline (a `/plan-follow-up`-style command
-that re-verifies, simplifies, runs a dual review, and consolidates), delegate to it and stop.
-Otherwise:
+that re-verifies, simplifies, runs a dual review, and consolidates), append `stage` 4 `done`,
+delegate to it, and stop.
+Otherwise append `stage` 4 `entered` and run the steps below. Ledger points: a `gate` line with
+unit `close-out` after every gate run, a `review` line (stage 4) per reviewer with its full output
+saved, and `dispatch` / `report` lines with unit `close-out` around the step 4 fix round.
 
 1. **Re-verify** the whole changeset against the plan with the project's full gate, including the
    heavy/slow suite (full tests, integration, end-to-end) from RUN CONFIG.
@@ -294,6 +351,11 @@ Otherwise:
    otherwise, `low` → Should-fix or Optional. A finding that step 4 dispatched and the fix round
    resolved is reported as fixed, not dropped from the list.
 
+   Take each unit's final state and attempt count, and every gate result, from the ledger's
+   `log.jsonl` (`reference/run-ledger.md` §3). Name the run id and the ledger path once, so the
+   user can audit any claim against the verbatim artifacts. Append `stage` 4 `done` after writing
+   the report.
+
    **Write this report for someone who stopped watching.** It is their first look at the run: open
    with the outcome in one or two sentences (what was built, whether the gate is green, what is
    outstanding), then what you need from them, then the ranked findings. Spell out unit ids, file
@@ -316,6 +378,13 @@ Do not auto-commit or push — the user reviews the recommendation and commits.
 - Raw-task mode plan approval → `AskUserQuestion` (mandatory pause).
 - Implementer `blocked` on a genuine requirement fork → `AskUserQuestion`.
 - Rung-3 coordinator attempt fails the fast gate twice → `AskUserQuestion` (skip unit / halt).
+- `--resume` and the current branch differs from the branch the ledger recorded →
+  `AskUserQuestion` (check out the recorded branch / stop).
+- `--resume` finds an in-flight attempt and `pgrep -af 'codex exec'` lists a process →
+  `AskUserQuestion` (wait for it to exit, at most the 1200-second cap / kill it and roll back).
+- `--resume` of a fan-out run from a session other than the one that launched it →
+  `AskUserQuestion` (re-run the fan-out on a fresh integration branch / stop, leaving the current
+  integration branch for manual inspection).
 - Non-zero codex exit or empty output → surface it and follow the doctrine failure mapping; never
   fabricate results.
 - Every implementer handoff forbids: commits, pushes, dependency additions without flagging,
