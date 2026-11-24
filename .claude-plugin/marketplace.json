@@ -7,20 +7,17 @@
     {
       "name": "deep-research",
       "source": "./plugins/deep-research",
-      "description": "Multi-phase web research with 15 domain-specific agent profiles, iterative deepening, anti-misinformation framework, and citation-backed reports",
-      "version": "1.7.0"
+      "description": "Multi-phase web research with 15 domain-specific agent profiles, iterative deepening, anti-misinformation framework, and citation-backed reports"
     },
     {
       "name": "gemini-imagegen",
       "source": "./plugins/gemini-imagegen",
-      "description": "Image generation and editing using Google Gemini API — Nano Banana 2.1 text-to-image, SVG, multi-turn refinement, transparency, prompt sidecar files, and Nano Banana Pro identity/face preservation",
-      "version": "1.10.0"
+      "description": "Image generation and editing using Google Gemini API — Nano Banana 2.1 text-to-image, SVG, multi-turn refinement, transparency, prompt sidecar files, and Nano Banana Pro identity/face preservation"
     },
     {
       "name": "conductor",
       "source": "./plugins/conductor",
-      "description": "Plan big, execute small — the coordinating model plans, reviews, and runs every build/test/merge; a cheaper pluggable implementer (OpenAI Codex CLI or a Claude subagent) writes all the code",
-      "version": "1.3.0"
+      "description": "Plan big, execute small — the coordinating model plans, reviews, and runs every build/test/merge; a cheaper pluggable implementer (OpenAI Codex CLI or a Claude subagent) writes all the code"
     }
   ]
 }

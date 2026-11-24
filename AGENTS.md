@@ -49,8 +49,7 @@ agentics/
    {
      "name": "<plugin-name>",
      "source": "./plugins/<plugin-name>",
-     "description": "<description>",
-     "version": "1.0.0"
+     "description": "<description>"
    }
    ```
 
@@ -295,7 +294,9 @@ claim is read from.
 ## Versioning
 
 - Bump the plugin version (minor) before committing changes to a plugin
-- Update version in both `plugin.json` and `marketplace.json`
+- The version lives only in `plugin.json`; never add a `version` to a `marketplace.json` entry
+  (when both are set, `plugin.json` wins, and CI rejects the duplicate)
+- Users receive a plugin update only when its `plugin.json` version changes
 - When bumping, also update any version references in README files
 
 ## Documentation

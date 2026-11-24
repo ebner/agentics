@@ -1,8 +1,9 @@
 """Check that the marketplace manifest and every plugin manifest agree.
 
 Fails when a manifest is not valid JSON, a marketplace entry points at a missing
-plugin, a plugin directory is not listed in the marketplace, names or versions
-differ between the two manifests, or a plugin has no README.md.
+plugin, a plugin directory is not listed in the marketplace, names differ between
+the two manifests, a marketplace entry sets a version (the version belongs only in
+plugin.json), a plugin.json has no version, or a plugin has no README.md.
 """
 
 import json
@@ -28,11 +29,10 @@ def main() -> int:
         manifest = json.loads(manifest_path.read_text())
         if manifest.get("name") != name:
             errors.append(f"{name}: plugin.json name is {manifest.get('name')!r}")
-        if manifest.get("version") != entry.get("version"):
-            errors.append(
-                f"{name}: plugin.json version {manifest.get('version')} "
-                f"!= marketplace.json version {entry.get('version')}"
-            )
+        if "version" in entry:
+            errors.append(f"{name}: marketplace.json entry sets a version; keep it only in plugin.json")
+        if not manifest.get("version"):
+            errors.append(f"{name}: plugin.json has no version")
         if not (plugin_dir / "README.md").is_file():
             errors.append(f"{name}: README.md is missing")
 
