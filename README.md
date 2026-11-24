@@ -14,6 +14,26 @@ A collection of advanced Claude Code plugins for research, content generation, a
 /plugin install conductor@agentics
 ```
 
+## Security and cost
+
+These plugins run with the same permissions as your Claude Code session. Know what each one does
+before you install it:
+
+- **deep-research** fetches and reads web pages and runs many research subagents in parallel. A
+  deep run can use a large share of your plan's usage or a significant amount of API spend.
+- **gemini-imagegen** calls the Google Gemini API, which is billed per image by Google, using the
+  `GEMINI_API_KEY` from your environment. The key is never written to disk. On first use it
+  creates a Python virtual environment inside the plugin directory and installs the pinned packages
+  from `requirements.txt` from PyPI.
+- **conductor** runs your project's build and test commands, creates git branches and worktrees,
+  and (when installed) runs the OpenAI Codex CLI, which bills against your OpenAI account. Codex
+  runs in its sandbox with writes confined to the project and network off. conductor never
+  commits to your branch or pushes. The plugin's README describes its safety model in detail.
+  Fan-out mode starts many agents in parallel.
+
+Report a security problem through this repository's private vulnerability reporting (the
+**Security** tab), not through a public issue.
+
 ## Plugins
 
 ### deep-research

@@ -290,7 +290,7 @@ claim is read from.
 - Never mention AI, Claude, or any AI assistant in commit messages
 - Write commit messages as if a human authored them
 - Use conventional style: short summary line, blank line, detailed description if needed
-- Use `master` as the default branch name
+- Use `main` as the default branch name
 
 ## Versioning
 

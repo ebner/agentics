@@ -14,7 +14,7 @@
       "name": "gemini-imagegen",
       "source": "./plugins/gemini-imagegen",
       "description": "Image generation and editing using Google Gemini API — Nano Banana 2.1 text-to-image, SVG, multi-turn refinement, transparency, prompt sidecar files, and Nano Banana Pro identity/face preservation",
-      "version": "1.8.0"
+      "version": "1.9.0"
     },
     {
       "name": "conductor",

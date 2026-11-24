@@ -8,11 +8,19 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SKILL_DIR="$(dirname "$SCRIPT_DIR")"
 VENV_DIR="$SKILL_DIR/.venv"
 
-# Create venv and install packages if needed
+REQUIREMENTS="$SKILL_DIR/requirements.txt"
+STAMP="$VENV_DIR/.installed-requirements.txt"
+
+# Create the venv if needed, and (re)install packages whenever requirements.txt changes,
+# so existing installs pick up new pinned versions
 if [ ! -f "$VENV_DIR/bin/python" ]; then
     echo "Setting up virtual environment..." >&2
     python3 -m venv "$VENV_DIR"
-    "$VENV_DIR/bin/pip" install --quiet -r "$SKILL_DIR/requirements.txt"
+fi
+if ! cmp -s "$REQUIREMENTS" "$STAMP"; then
+    echo "Installing pinned packages..." >&2
+    "$VENV_DIR/bin/pip" install --quiet -r "$REQUIREMENTS"
+    cp "$REQUIREMENTS" "$STAMP"
     echo "Setup complete." >&2
 fi
 
